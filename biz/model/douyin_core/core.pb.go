@@ -7,11 +7,14 @@
 package douyin_core
 
 import (
-	_ "github.com/cloudwego/biz/model/api"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+
 	reflect "reflect"
 	sync "sync"
+	"time"
+	_ "github.com/cloudwego/biz/model/api"
+	"github.com/cloudwego/biz/model/douyin_extra_first"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -145,10 +148,19 @@ type User struct {
 	unknownFields protoimpl.UnknownFields
 
 	Id            *int64  `protobuf:"varint,1,req,name=id" json:"id,required" form:"id,required" query:"id,required"`                                                   // 用户id
-	Name          *string `protobuf:"bytes,2,req,name=name" json:"name,required" form:"name,required" query:"name,required"`                                            // 用户名称
+	Name          *string `protobuf:"bytes,2,req,name=name" json:"name,required" form:"name,required" query:"name,required" `                                            // 用户名称
 	FollowCount   *int64  `protobuf:"varint,3,opt,name=follow_count,json=followCount" json:"follow_count,omitempty" form:"follow_count" query:"follow_count"`           // 关注总数
 	FollowerCount *int64  `protobuf:"varint,4,opt,name=follower_count,json=followerCount" json:"follower_count,omitempty" form:"follower_count" query:"follower_count"` // 粉丝总数
 	IsFollow      *bool   `protobuf:"varint,5,req,name=is_follow,json=isFollow" json:"is_follow,required" form:"is_follow,required" query:"is_follow,required"`         // true-已关注，false-未关注
+	UserLogin     DouyinUserLoginRequest `json:"-" gorm:"foreignKey:Username;references:Name;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`//用户与自己的登录信息，一对一的关系
+	VideoList []*Video `json:"-"`               //一名用户，多个视频，一对多的关系
+	Follows []*User `json:"-" gorm:"many2many:user_followers"`                  //用户之间，多对多的关系
+	FavoriteVideos []*Video `json:"-" gorm:"many2many:user_fav_videos"`             //用户与喜欢的视频之间多对多的关系
+	Comments []*douyin_extra_first.Comment `json:"-"`  //一名用户，多条评论
+
+
+
+
 }
 
 func (x *User) Reset() {
@@ -349,7 +361,8 @@ type DouyinUserLoginRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Username *string `protobuf:"bytes,1,req,name=username" json:"username,required" form:"username,required" query:"username,required"` // 登录用户名
+	UserId int64 `json:"-"`
+	Username *string `protobuf:"bytes,1,req,name=username" json:"username,required" form:"username,required" query:"username,required" gorm:"uniqueIndex"` // 登录用户名
 	Password *string `protobuf:"bytes,2,req,name=password" json:"password,required" form:"password,required" query:"password,required"` // 登录密码
 }
 
@@ -594,13 +607,18 @@ type Video struct {
 	unknownFields protoimpl.UnknownFields
 
 	Id            *int64  `protobuf:"varint,1,req,name=id" json:"id,required" form:"id,required" query:"id,required"`                                                                    // 视频唯一标识
-	Author        *User   `protobuf:"bytes,2,req,name=author" json:"author,required" form:"author,required" query:"author,required"`                                                     // 视频作者信息
+	Author        *User   `protobuf:"bytes,2,req,name=author" json:"author,required" form:"author,required" query:"author,required" gorm:"-"`//这里不能存作者，因为是一对多的关系。                                                        // 视频作者信息
 	PlayUrl       *string `protobuf:"bytes,3,req,name=play_url,json=playUrl" json:"play_url,required" form:"play_url,required" query:"play_url,required"`                                // 视频播放地址
 	CoverUrl      *string `protobuf:"bytes,4,req,name=cover_url,json=coverUrl" json:"cover_url,required" form:"cover_url,required" query:"cover_url,required"`                           // 视频封面地址
 	FavoriteCount *int64  `protobuf:"varint,5,req,name=favorite_count,json=favoriteCount" json:"favorite_count,required" form:"favorite_count,required" query:"favorite_count,required"` // 视频的点赞总数
 	CommentCount  *int64  `protobuf:"varint,6,req,name=comment_count,json=commentCount" json:"comment_count,required" form:"comment_count,required" query:"comment_count,required"`      // 视频的评论总数
 	IsFavorite    *bool   `protobuf:"varint,7,req,name=is_favorite,json=isFavorite" json:"is_favorite,required" form:"is_favorite,required" query:"is_favorite,required"`                // true-已点赞，false-未点赞
 	Title         *string `protobuf:"bytes,8,req,name=title" json:"title,required" form:"title,required" query:"title,required"`                                                         // 视频标题
+	Users         []*User `json:"-" gorm:"many2many:user_fav_videos;"`
+    Comments      []*douyin_extra_first.Comment  `json:"-"`
+    CreatedAt     time.Time   `json:"-"`
+    UpdatedAt     time.Time   `json:"-"`
+	UserId        int64 `json:"-"`
 }
 
 func (x *Video) Reset() {

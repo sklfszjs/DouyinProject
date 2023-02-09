@@ -12,6 +12,7 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+	"time"
 )
 
 const (
@@ -246,11 +247,13 @@ type Comment struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
-
+	UserId int64 `json:"-"`
+	VideoId int64 `json:"-"`
+	CreatedAt time.Time `json:"-"`
 	Id         *int64  `protobuf:"varint,1,req,name=id" json:"id,required" form:"id,required" query:"id,required"`                                                    // 视频评论id
-	User       *User   `protobuf:"bytes,2,req,name=user" json:"user,required" form:"user,required" query:"user,required"`                                             // 评论用户信息
 	Content    *string `protobuf:"bytes,3,req,name=content" json:"content,required" form:"content,required" query:"content,required"`                                 // 评论内容
 	CreateDate *string `protobuf:"bytes,4,req,name=create_date,json=createDate" json:"create_date,required" form:"create_date,required" query:"create_date,required"` // 评论发布日期，格式 mm-dd
+	User       *User   `protobuf:"bytes,2,req,name=user" json:"user,required" form:"user,required" query:"user,required" gorm:"-"`                                             // 评论用户信息
 }
 
 func (x *Comment) Reset() {
