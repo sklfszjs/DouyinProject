@@ -5,6 +5,8 @@ go 1.18
 require (
 	github.com/cloudwego/hertz v0.5.1
 	google.golang.org/protobuf v1.28.1
+	gorm.io/driver/mysql v1.4.6
+	gorm.io/gorm v1.24.5
 )
 
 require (
@@ -28,6 +30,4 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
-	gorm.io/driver/mysql v1.4.6 // indirect
-	gorm.io/gorm v1.24.5 // indirect
 )

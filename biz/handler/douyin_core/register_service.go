@@ -8,6 +8,10 @@ import (
 	douyin_core "github.com/cloudwego/biz/model/douyin_core"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+	"gorm.io/driver/mysql"
+	
+  "gorm.io/gorm"
+  "fmt"
 )
 
 // CreateRegisterResponse .
@@ -20,8 +24,30 @@ func CreateRegisterResponse(ctx context.Context, c *app.RequestContext) {
 		c.String(consts.StatusBadRequest, err.Error())
 		return
 	}
-
+  fmt.Printf("%v\n",req)
 	resp := new(douyin_core.DouyinUserRegisterResponse)
 
 	c.JSON(consts.StatusOK, resp)
+}
+
+func UserRegister(req douyin_core.DouyinUserRegisterRequest) douyin_core.DouyinUserRegisterResponse {
+	db, err := gorm.Open(
+		mysql.Open("root:@tcp(127.0.0.1:3306)/douyin?charset=utf8mb4&parseTime=True&loc=Local"),
+		&gorm.Config{})
+	if err != nil {
+		fmt.Println("数据库链接错误", err)
+	}
+  username:=req.Username
+  Password:=req.Password
+  fmt.Println(Password)
+  user:=&douyin_core.User{}
+  db.Where("Name = ?",username).First(user)
+  if user.Name != ""{
+    fmt.Println("new user")
+  }else{
+    fmt.Println("wrong user")
+  }
+  resp:=douyin_core.DouyinUserRegisterResponse{}
+  return resp
+  
 }

@@ -11,14 +11,15 @@ import (
 
 func Form_tables() error {
 	db, err := gorm.Open(
-		mysql.Open("root:#Aa2101572..@tcp(127.0.0.1:3306)/douyin?charset=utf8mb4&parseTime=True&loc=Local"),
+		mysql.Open("root:@tcp(127.0.0.1:3306)/douyin?charset=utf8mb4&parseTime=True&loc=Local"),
 		&gorm.Config{})
 	if err != nil {
 		fmt.Println("数据库链接错误", err)
 	}
-	// db.AutoMigrate(douyin_extra_first.Comment{})
+  db.AutoMigrate(douyin_core.DouyinUserLoginRequest{})
 	migErr := db.AutoMigrate(&douyin_core.User{VideoList: []*douyin_core.Video{}, Follows: []*douyin_core.User{},
 		Comments:       []*douyin_extra_first.Comment{},
-		FavoriteVideos: []*douyin_core.Video{}})
+		FavoriteVideos: []*douyin_core.Video{},
+    UserLogin: &douyin_core.DouyinUserLoginRequest{} })
 	return migErr
 }

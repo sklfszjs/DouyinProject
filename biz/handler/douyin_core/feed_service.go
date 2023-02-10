@@ -26,10 +26,10 @@ func CreateFeedResponse(ctx context.Context, c *app.RequestContext) {
   var vlist []*douyin_core.Video
   var nexttime int64 = 100000
 	resp := &douyin_core.DouyinFeedResponse{
-    StatusCode: &code,
-    StatusMsg: &msg,
+    StatusCode: code,
+    StatusMsg: msg,
     VideoList: vlist,
-    NextTime: &nexttime,
+    NextTime: nexttime,
   }
 
 	c.JSON(consts.StatusOK, resp)
