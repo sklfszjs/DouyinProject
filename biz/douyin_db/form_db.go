@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/cloudwego/biz/model/douyin_core"
-	"github.com/cloudwego/biz/model/douyin_extra_first"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -17,8 +16,9 @@ func Form_tables() error {
 		fmt.Println("数据库链接错误", err)
 	}
   db.AutoMigrate(douyin_core.DouyinUserLoginRequest{})
+  db.AutoMigrate(douyin_core.Comment{})
 	migErr := db.AutoMigrate(&douyin_core.User{VideoList: []*douyin_core.Video{}, Follows: []*douyin_core.User{},
-		Comments:       []*douyin_extra_first.Comment{},
+		Comments:       []*douyin_core.Comment{},
 		FavoriteVideos: []*douyin_core.Video{},
     UserLogin: &douyin_core.DouyinUserLoginRequest{} })
 	return migErr

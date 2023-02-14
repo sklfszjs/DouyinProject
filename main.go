@@ -3,19 +3,16 @@
 package main
 
 import (
-	"github.com/cloudwego/biz/douyin_db"
+	_  "github.com/cloudwego/biz/douyin_db"
 	"github.com/cloudwego/hertz/pkg/app/server"
 )
 
 func init() {
-	err := douyin_db.Form_tables()
-	if err != nil {
-		panic("db migate error")
-	}
+//	err := douyin_db.Form_tables()
 }
 
 func main() {
-	h := server.Default()
+	h := server.New(server.WithMaxRequestBodySize(400*1024*1024))
 
 	register(h)
 	h.Spin()

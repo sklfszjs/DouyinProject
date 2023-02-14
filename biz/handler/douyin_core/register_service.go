@@ -24,8 +24,8 @@ func CreateRegisterResponse(ctx context.Context, c *app.RequestContext) {
 		c.String(consts.StatusBadRequest, err.Error())
 		return
 	}
-  fmt.Printf("%v\n",req)
-	resp := new(douyin_core.DouyinUserRegisterResponse)
+  fmt.Printf("%#v\n",req)
+	resp :=UserRegister(req)
 
 	c.JSON(consts.StatusOK, resp)
 }
@@ -38,16 +38,35 @@ func UserRegister(req douyin_core.DouyinUserRegisterRequest) douyin_core.DouyinU
 		fmt.Println("数据库链接错误", err)
 	}
   username:=req.Username
-  Password:=req.Password
-  fmt.Println(Password)
-  user:=&douyin_core.User{}
-  db.Where("Name = ?",username).First(user)
-  if user.Name != ""{
+  password:=req.Password
+  users:=make([]*douyin_core.User,0)
+  result:=db.Where("Name = ?",username).Find(&users)
+  if result.RowsAffected== 0 {
     fmt.Println("new user")
+    db.Create(&douyin_core.User{
+      Token: username+password,
+      Name:username,
+      UserLogin:&douyin_core.DouyinUserLoginRequest{
+        Username:username,
+        Password:password,
+      },})
+    result=db.Where("Name = ?",username).Find(&users)
+    if result.RowsAffected> 1 {
+      panic("same user in db")
+    }
+
+    return douyin_core.DouyinUserRegisterResponse{
+      StatusCode:0,
+      StatusMsg:"register success",
+      UserId:users[0].Id,
+      Token:users[0].Token,
+    }
   }else{
     fmt.Println("wrong user")
+    return douyin_core.DouyinUserRegisterResponse{
+      StatusCode:1,
+      StatusMsg:"user name repeat",
+    }
   }
-  resp:=douyin_core.DouyinUserRegisterResponse{}
-  return resp
   
 }

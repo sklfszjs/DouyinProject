@@ -8,6 +8,10 @@ import (
 	douyin_core "github.com/cloudwego/biz/model/douyin_core"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+	"io/ioutil"
+  "gorm.io/gorm"
+  "gorm.io/driver/mysql"
+  "fmt"
 )
 
 // CreatePublishActionResponse .
@@ -21,7 +25,55 @@ func CreatePublishActionResponse(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(douyin_core.DouyinPublishActionResponse)
+  resp := PublishVideo(req )
 
 	c.JSON(consts.StatusOK, resp)
 }
+
+func PublishVideo(req douyin_core.DouyinPublishActionRequest)douyin_core.DouyinPublishActionResponse{
+
+	db, err := gorm.Open(
+		mysql.Open("root:@tcp(127.0.0.1:3306)/douyin?charset=utf8mb4&parseTime=True&loc=Local"),
+		&gorm.Config{})
+	if err != nil {
+		fmt.Println("数据库链接错误", err)
+	}
+  token:=req.Token
+  title:=req.Title
+  users:=make([]*douyin_core.User,0)
+  result:=db.Where("Token = ?", token).Find(&users)
+  if result.RowsAffected>0 {
+    if result.RowsAffected> 1 {
+      panic("same user in db")
+    }
+    fmt.Println("token check success")
+    title="./videos/"+token+title
+    fmt.Println(title+"\n")
+    if err = ioutil.WriteFile(title,req.Data,0666);err !=nil{
+		  fmt.Println("写入错误：",err)
+
+       return douyin_core.DouyinPublishActionResponse{
+       StatusCode:2,
+       StatusMsg:"file input error",
+      }
+    }
+    video:=&douyin_core.Video{
+      PlayUrl: "/videos/"+token+title,
+      Title:title,
+      UserId:users[0].Id,
+    }
+    db.Model(users[0]).Updates(douyin_core.User{VideoList: []*douyin_core.Video{video}})
+
+    return douyin_core.DouyinPublishActionResponse{
+      StatusCode:0,
+      StatusMsg:"upload success",
+    }
+  }
+ return douyin_core.DouyinPublishActionResponse{
+   StatusCode:1,
+   StatusMsg:"token error",
+ }
+  
+  
+}
+

@@ -8,6 +8,10 @@ import (
 	douyin_core "github.com/cloudwego/biz/model/douyin_core"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+	"gorm.io/driver/mysql"
+	
+  "gorm.io/gorm"
+  "fmt"
 )
 
 // CreateLoginResponse .
@@ -21,7 +25,40 @@ func CreateLoginResponse(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(douyin_core.DouyinUserLoginResponse)
+	resp := UserLogin(req) 
 
 	c.JSON(consts.StatusOK, resp)
+}
+
+
+func UserLogin(req douyin_core.DouyinUserLoginRequest) douyin_core.DouyinUserLoginResponse{
+	db, err := gorm.Open(
+		mysql.Open("root:@tcp(127.0.0.1:3306)/douyin?charset=utf8mb4&parseTime=True&loc=Local"),
+		&gorm.Config{})
+	if err != nil {
+		fmt.Println("数据库链接错误", err)
+	}
+  fmt.Printf("%#v",req)
+  username:=req.Username
+  password:=req.Password
+  users:=make([]*douyin_core.User,0)
+  result:=db.Joins("UserLogin",db.Where(&douyin_core.DouyinUserLoginRequest{Password:password,Username:username})).Find(&users)
+  if result.RowsAffected>0 {
+    if result.RowsAffected> 1 {
+      panic("same user in db")
+    }
+    fmt.Println("login success")
+    return douyin_core.DouyinUserLoginResponse{
+      StatusCode:0,
+      StatusMsg:"login success",
+      UserId:users[0].Id,
+      Token:users[0].Token,
+    }
+  }else{
+    return douyin_core.DouyinUserLoginResponse{
+      StatusCode:1,
+      StatusMsg:"username/password error",
+    }
+  }
+  
 }
