@@ -21,11 +21,11 @@ func init() {
 	var db *gorm.DB
 	for i := 0; i < capi; i++ {
 		db, err = gorm.Open(
-			mysql.Open("root:#Aa2101572..@tcp(127.0.0.1:3306)/douyin?charset=utf8mb4&parseTime=True&loc=Local"),
+			mysql.Open(fmt.Sprintf("%s:%s@tcp(127.0.0.1:3306)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+				GetConfigs().DBUsrName, GetConfigs().DBPassword, GetConfigs().DBName)),
 			&gorm.Config{})
 		if err != nil {
-			fmt.Println("DB connection false", err)
-			panic("DBPoool init false")
+			fmt.Println("数据库链接错误", err)
 		}
 		DBPool.DB <- db
 	}
