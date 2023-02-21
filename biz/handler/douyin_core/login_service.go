@@ -6,12 +6,11 @@ import (
 	"context"
 
 	douyin_core "github.com/cloudwego/biz/model/douyin_core"
+	"github.com/cloudwego/biz/utils"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
-	"gorm.io/driver/mysql"
-	
-  "gorm.io/gorm"
-  "fmt"
+
+	"fmt"
 )
 
 // CreateLoginResponse .
@@ -25,40 +24,45 @@ func CreateLoginResponse(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := UserLogin(req) 
+	resp := UserLogin(req)
 
 	c.JSON(consts.StatusOK, resp)
 }
 
+func UserLogin(req douyin_core.DouyinUserLoginRequest) douyin_core.DouyinUserLoginResponse {
+	db := utils.GetDBConnPool().GetConn()
+	defer utils.GetDBConnPool().ReturnConn(db)
 
-func UserLogin(req douyin_core.DouyinUserLoginRequest) douyin_core.DouyinUserLoginResponse{
-	db, err := gorm.Open(
-		mysql.Open("root:@tcp(127.0.0.1:3306)/douyin?charset=utf8mb4&parseTime=True&loc=Local"),
-		&gorm.Config{})
-	if err != nil {
-		fmt.Println("数据库链接错误", err)
+	fmt.Printf("%#v", req)
+	username := req.Username
+	password := req.Password
+	password = utils.AesEncrypt(username, password)
+	users := make([]*douyin_core.User, 0)
+	tx := db.Begin()
+	// t:=douyin_core.DouyinUserLoginRequest{Username: username, Password: password}
+
+	result := tx.Table("douyin_user_login_requests").Joins("join users on users.name=douyin_user_login_requests.username").Where("users.name=? and douyin_user_login_requests.password=?", username, password).Select("id", "token").Find(&users)
+	// result := tx.(&douyin_core.DouyinUserLoginRequest{Username: username, Password: password}).Joins("join users on users.name=douyin_user_login_requests.username").Find(&users)
+	if result.RowsAffected > 0 {
+		if result.RowsAffected > 1 {
+			tx.Rollback()
+			panic("same user in db")
+		}
+		fmt.Println("login success")
+		fmt.Printf("%#v", users[0])
+		tx.Commit()
+		return douyin_core.DouyinUserLoginResponse{
+			StatusCode: 0,
+			StatusMsg:  "login success",
+			UserId:     users[0].Id,
+			Token:      users[0].Token,
+		}
+	} else {
+		tx.Rollback()
+		return douyin_core.DouyinUserLoginResponse{
+			StatusCode: 1,
+			StatusMsg:  "username/password error",
+		}
 	}
-  fmt.Printf("%#v",req)
-  username:=req.Username
-  password:=req.Password
-  users:=make([]*douyin_core.User,0)
-  result:=db.Joins("UserLogin",db.Where(&douyin_core.DouyinUserLoginRequest{Password:password,Username:username})).Find(&users)
-  if result.RowsAffected>0 {
-    if result.RowsAffected> 1 {
-      panic("same user in db")
-    }
-    fmt.Println("login success")
-    return douyin_core.DouyinUserLoginResponse{
-      StatusCode:0,
-      StatusMsg:"login success",
-      UserId:users[0].Id,
-      Token:users[0].Token,
-    }
-  }else{
-    return douyin_core.DouyinUserLoginResponse{
-      StatusCode:1,
-      StatusMsg:"username/password error",
-    }
-  }
-  
+
 }

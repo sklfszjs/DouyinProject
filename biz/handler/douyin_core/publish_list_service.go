@@ -5,7 +5,10 @@ package douyin_core
 import (
 	"context"
 
+	"fmt"
+
 	douyin_core "github.com/cloudwego/biz/model/douyin_core"
+	"github.com/cloudwego/biz/utils"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
@@ -21,7 +24,41 @@ func CreatePublishListResponse(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(douyin_core.DouyinPublishListResponse)
+	resp := PublishList(req)
 
 	c.JSON(consts.StatusOK, resp)
+}
+
+func PublishList(req douyin_core.DouyinPublishListRequest) douyin_core.DouyinPublishListResponse {
+	db := utils.GetDBConnPool().GetConn()
+	defer utils.GetDBConnPool().ReturnConn(db)
+
+	userID := req.UserId
+	token := req.Token
+	users := make([]*douyin_core.User, 0)
+	tx := db.Begin()
+
+	result := tx.Where("token = ? and ID = ?", token, userID).Find(&users)
+	if result.RowsAffected == 1 {
+		videos := make([]*douyin_core.Video, 0)
+		tx.Where("user_id = ?", users[0].Id).Find(&videos)
+		for i := 0; i < len(videos); i++ {
+			videos[i].Users = users[0]
+		}
+		tx.Commit()
+		return douyin_core.DouyinPublishListResponse{
+			StatusCode: 0,
+			StatusMsg:  "operation success",
+			VideoList:  videos,
+		}
+
+	} else {
+		tx.Rollback()
+		fmt.Println("user not found")
+		return douyin_core.DouyinPublishListResponse{
+			StatusCode: 1,
+			StatusMsg:  "user not found",
+		}
+	}
+
 }

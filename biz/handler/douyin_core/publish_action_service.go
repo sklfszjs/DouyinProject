@@ -4,14 +4,21 @@ package douyin_core
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"mime/multipart"
+	"os"
+	"strconv"
+	"time"
+
+	// "io/ioutil"
+	"io"
+
+	"github.com/cloudwego/biz/utils"
 
 	douyin_core "github.com/cloudwego/biz/model/douyin_core"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
-	"io/ioutil"
-  "gorm.io/gorm"
-  "gorm.io/driver/mysql"
-  "fmt"
 )
 
 // CreatePublishActionResponse .
@@ -21,59 +28,126 @@ func CreatePublishActionResponse(ctx context.Context, c *app.RequestContext) {
 	var req douyin_core.DouyinPublishActionRequest
 	err = c.BindAndValidate(&req)
 	if err != nil {
+		print("bind and validate error ,", err.Error())
 		c.String(consts.StatusBadRequest, err.Error())
 		return
 	}
 
-  resp := PublishVideo(req )
+	resp := PublishVideo(req)
 
 	c.JSON(consts.StatusOK, resp)
 }
 
-func PublishVideo(req douyin_core.DouyinPublishActionRequest)douyin_core.DouyinPublishActionResponse{
+func PublishVideo(req douyin_core.DouyinPublishActionRequest) douyin_core.DouyinPublishActionResponse {
 
-	db, err := gorm.Open(
-		mysql.Open("root:@tcp(127.0.0.1:3306)/douyin?charset=utf8mb4&parseTime=True&loc=Local"),
-		&gorm.Config{})
-	if err != nil {
-		fmt.Println("数据库链接错误", err)
+	db := utils.GetDBConnPool().GetConn()
+	defer utils.GetDBConnPool().ReturnConn(db)
+
+	users := make([]*douyin_core.User, 0)
+	tx := db.Begin()
+
+	result := tx.Where("token = ?", req.Token).Find(&users)
+	if result.RowsAffected == 1 {
+		fmt.Println("legal user")
+		fmt.Println(req.Title)
+		filename := strconv.Itoa(int(time.Now().Unix())) + strconv.Itoa(time.Now().Nanosecond()) + strconv.Itoa(int(users[0].Id))
+		filename = filename + ".mp4"
+		fmt.Println(filename)
+		path_filename, err := WriteVideo(req.Data, strconv.Itoa(int(users[0].Id)), filename)
+		if err != nil {
+			fmt.Println(err)
+			tx.Rollback()
+			return douyin_core.DouyinPublishActionResponse{
+				StatusCode: 1,
+				StatusMsg:  "write video error",
+			}
+		}
+		playurl := fmt.Sprintf("%s:%d", utils.GetConfigs().IP, utils.GetConfigs().Port) + path_filename[1:]
+		tx.Create(&douyin_core.Video{
+			UserId:   users[0].Id,
+			Title:    req.Title,
+			PlayUrl:  playurl,
+			CoverUrl: "",
+			FileName: path_filename,
+		})
+		videos := make([]douyin_core.Video, 0)
+		result := tx.Where("play_url = ?", playurl).Find(&videos)
+		if result.RowsAffected != 1 {
+			fmt.Println(&result.Statement.SQL, result.RowsAffected)
+			panic("where is the new data?")
+		}
+		tx.Model(&users[0]).Updates(douyin_core.User{Work_count: users[0].Work_count + 1})
+		tx.Create(&douyin_core.UserVideos{UserId: users[0].Id, VideoId: videos[0].Id})
+		tx.Commit()
+		return douyin_core.DouyinPublishActionResponse{
+			StatusCode: 0,
+			StatusMsg:  "update success",
+		}
+		// users[0].Is_follow = true
+
+	} else {
+		tx.Rollback()
+		fmt.Println("illegal user")
+		return douyin_core.DouyinPublishActionResponse{
+			StatusCode: 1,
+			StatusMsg:  "illegal token",
+		}
 	}
-  token:=req.Token
-  title:=req.Title
-  users:=make([]*douyin_core.User,0)
-  result:=db.Where("Token = ?", token).Find(&users)
-  if result.RowsAffected>0 {
-    if result.RowsAffected> 1 {
-      panic("same user in db")
-    }
-    fmt.Println("token check success")
-    title="./videos/"+token+title
-    fmt.Println(title+"\n")
-    if err = ioutil.WriteFile(title,req.Data,0666);err !=nil{
-		  fmt.Println("写入错误：",err)
 
-       return douyin_core.DouyinPublishActionResponse{
-       StatusCode:2,
-       StatusMsg:"file input error",
-      }
-    }
-    video:=&douyin_core.Video{
-      PlayUrl: "/videos/"+token+title,
-      Title:title,
-      UserId:users[0].Id,
-    }
-    db.Model(users[0]).Updates(douyin_core.User{VideoList: []*douyin_core.Video{video}})
-
-    return douyin_core.DouyinPublishActionResponse{
-      StatusCode:0,
-      StatusMsg:"upload success",
-    }
-  }
- return douyin_core.DouyinPublishActionResponse{
-   StatusCode:1,
-   StatusMsg:"token error",
- }
-  
-  
 }
 
+// 创建路径
+func CreateDataDir(basePath string, folderName string) (string, error) {
+	// folderName := time.Now().Format("2006-01-02")
+
+	// folderPath := filepath.Join(basePath, folderName)
+	fmt.Println(basePath, folderName)
+	folderPath := basePath + folderName
+	fmt.Println(folderPath)
+	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
+		// 必须分成两步
+		// 先创建文件夹
+		os.Mkdir(folderPath, 0777)
+		// 再修改权限
+		os.Chmod(folderPath, 0777)
+	}
+	return folderPath, nil
+}
+
+// 图片处理
+func WriteVideo(file *multipart.FileHeader, dirname string, filename string) (string, error) {
+	filepoint, err := file.Open() //打开文件
+	if err != nil {
+		fmt.Println("file open err is", err)
+		return "", err
+	}
+	defer filepoint.Close()
+
+	//创建新文件进行存储
+	pathname, err := CreateDataDir("./", dirname)
+	if err != nil {
+		fmt.Println("total create data dir err is", err)
+		return "", errors.New("createdatadir error")
+	}
+	filename = pathname + "/" + filename
+	fmt.Println(filename)
+	newfile, err := os.Create(filename)
+	if err != nil {
+		return "", err
+	}
+	defer newfile.Close()
+
+	//把旧文件的内容放入新文件
+	var context []byte = make([]byte, 1024)
+	for {
+		n, err := filepoint.Read(context)
+		newfile.Write(context[:n])
+		if err != nil {
+			if err == io.EOF {
+				return filename, nil
+			} else {
+				return "", err
+			}
+		}
+	}
+}

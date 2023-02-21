@@ -5,13 +5,13 @@ package douyin_core
 import (
 	"context"
 
+	"fmt"
+
+	"github.com/cloudwego/biz/utils"
+
 	douyin_core "github.com/cloudwego/biz/model/douyin_core"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
-	"gorm.io/driver/mysql"
-	
-  "gorm.io/gorm"
-  "fmt"
 )
 
 // CreateUserResponse .
@@ -25,38 +25,39 @@ func CreateUserResponse(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp :=UserService(req) 
+	resp := UserService(req)
 
 	c.JSON(consts.StatusOK, resp)
 }
 
-func UserService(req douyin_core.DouyinUserRequest) douyin_core.DouyinUserResponse{
-	db, err := gorm.Open(
-		mysql.Open("root:@tcp(127.0.0.1:3306)/douyin?charset=utf8mb4&parseTime=True&loc=Local"),
-		&gorm.Config{})
-	if err != nil {
-		fmt.Println("数据库链接错误", err)
+func UserService(req douyin_core.DouyinUserRequest) douyin_core.DouyinUserResponse {
+	db := utils.GetDBConnPool().GetConn()
+	defer utils.GetDBConnPool().ReturnConn(db)
+
+	userID := req.UserId
+	token := req.Token
+	fmt.Println(userID, token)
+	users := make([]*douyin_core.User, 0)
+	tx := db.Begin()
+
+	result := tx.Where("id = ? and token = ?", userID, token).Find(&users)
+	if result.RowsAffected == 1 {
+		fmt.Println("legal user")
+		tx.Commit()
+		// users[0].Is_follow = true
+
+		return douyin_core.DouyinUserResponse{
+			StatusCode: 0,
+			StatusMsg:  "welcome, " + users[0].Name,
+			User:       users[0],
+		}
+	} else {
+		tx.Rollback()
+		fmt.Println("illegal user")
+		return douyin_core.DouyinUserResponse{
+			StatusCode: 1,
+			StatusMsg:  "illegal user",
+		}
 	}
-  userid:=req.UserId
-  token:=req.Token
-  users:=make([]*douyin_core.User,0)
-  result:=db.Where("Id = ?",userid).Where("Token = ?",token).Find(&users)
-  if result.RowsAffected> 0 {
-    if result.RowsAffected> 1 {
-      panic("same user in db")
-    }
-    fmt.Println("user service success")
-    return douyin_core.DouyinUserResponse{
-      StatusCode:0,
-      StatusMsg:"user service success",
-      User:users[0],
-    }
-  }else{
-    fmt.Println("wrong token")
-    return douyin_core.DouyinUserResponse{
-      StatusCode:1,
-      StatusMsg:"wrong token",
-    }
-  }
-  
+
 }

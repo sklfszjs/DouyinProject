@@ -4,7 +4,10 @@ package douyin_core
 
 import (
 	"context"
-  "fmt"
+	"fmt"
+
+	"github.com/cloudwego/biz/utils"
+
 	douyin_core "github.com/cloudwego/biz/model/douyin_core"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
@@ -20,17 +23,50 @@ func CreateFeedResponse(ctx context.Context, c *app.RequestContext) {
 		c.String(consts.StatusBadRequest, err.Error())
 		return
 	}
-  fmt.Println("douyin/feed")
-  var code int32=0
-  var msg string="hello"
-  var vlist []*douyin_core.Video
-  var nexttime int64 = 100000
-	resp := &douyin_core.DouyinFeedResponse{
-    StatusCode: code,
-    StatusMsg: msg,
-    VideoList: vlist,
-    NextTime: nexttime,
-  }
-
+	resp := FeedService(req)
 	c.JSON(consts.StatusOK, resp)
+}
+
+func FeedService(req douyin_core.DouyinFeedRequest) douyin_core.DouyinFeedResponse {
+	db := utils.GetDBConnPool().GetConn()
+	defer utils.GetDBConnPool().ReturnConn(db)
+
+	token := req.Token
+	users := make([]*douyin_core.User, 0)
+	tx := db.Begin()
+
+	result := tx.Where("token = ? ", token).Find(&users)
+	if result.RowsAffected == 1 {
+		videos := make([]*douyin_core.Video, 0)
+		tx.Where("user_id = ?", users[0].Id).Where("UNIX_TIMESTAMP(created_at) > ?", req.LatestTime).Order("created_at").Find(&videos)
+		for i := 0; i < len(videos); i++ {
+			videos[i].Users = users[0]
+		}
+		tx.Commit()
+		var nexttime int64 = 1 << 62
+		for _, v := range videos {
+			if nexttime > v.CreatedAt.Unix() {
+				nexttime = v.CreatedAt.Unix()
+			}
+		}
+		if nexttime == 1<<62 {
+			nexttime = 0
+		}
+
+		return douyin_core.DouyinFeedResponse{
+			StatusCode: 0,
+			StatusMsg:  "operation success",
+			VideoList:  videos,
+			NextTime:   nexttime,
+		}
+
+	} else {
+		tx.Rollback()
+		fmt.Println("user not found")
+		return douyin_core.DouyinFeedResponse{
+			StatusCode: 1,
+			StatusMsg:  "user not found",
+		}
+	}
+
 }

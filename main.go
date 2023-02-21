@@ -3,17 +3,19 @@
 package main
 
 import (
-	_  "github.com/cloudwego/biz/douyin_db"
+	"fmt"
+
+	utils "github.com/cloudwego/biz/utils"
 	"github.com/cloudwego/hertz/pkg/app/server"
 )
 
 func init() {
-//	err := douyin_db.Form_tables()
+	utils.Form_tables()
 }
 
 func main() {
-	h := server.New(server.WithMaxRequestBodySize(400*1024*1024))
-
+	h := server.New(server.WithMaxRequestBodySize(400*1024*1024),
+		server.WithHostPorts(fmt.Sprintf("%s:%d", utils.GetConfigs().IP, utils.GetConfigs().Port)))
 	register(h)
 	h.Spin()
 }

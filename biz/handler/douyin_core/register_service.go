@@ -5,13 +5,12 @@ package douyin_core
 import (
 	"context"
 
+	"fmt"
+
 	douyin_core "github.com/cloudwego/biz/model/douyin_core"
+	"github.com/cloudwego/biz/utils"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
-	"gorm.io/driver/mysql"
-	
-  "gorm.io/gorm"
-  "fmt"
 )
 
 // CreateRegisterResponse .
@@ -24,49 +23,52 @@ func CreateRegisterResponse(ctx context.Context, c *app.RequestContext) {
 		c.String(consts.StatusBadRequest, err.Error())
 		return
 	}
-  fmt.Printf("%#v\n",req)
-	resp :=UserRegister(req)
+	fmt.Printf("request is %#v\n", req)
+	resp := UserRegister(req)
 
 	c.JSON(consts.StatusOK, resp)
 }
 
 func UserRegister(req douyin_core.DouyinUserRegisterRequest) douyin_core.DouyinUserRegisterResponse {
-	db, err := gorm.Open(
-		mysql.Open("root:@tcp(127.0.0.1:3306)/douyin?charset=utf8mb4&parseTime=True&loc=Local"),
-		&gorm.Config{})
-	if err != nil {
-		fmt.Println("数据库链接错误", err)
-	}
-  username:=req.Username
-  password:=req.Password
-  users:=make([]*douyin_core.User,0)
-  result:=db.Where("Name = ?",username).Find(&users)
-  if result.RowsAffected== 0 {
-    fmt.Println("new user")
-    db.Create(&douyin_core.User{
-      Token: username+password,
-      Name:username,
-      UserLogin:&douyin_core.DouyinUserLoginRequest{
-        Username:username,
-        Password:password,
-      },})
-    result=db.Where("Name = ?",username).Find(&users)
-    if result.RowsAffected> 1 {
-      panic("same user in db")
-    }
+	db := utils.GetDBConnPool().GetConn()
+	defer utils.GetDBConnPool().ReturnConn(db)
 
-    return douyin_core.DouyinUserRegisterResponse{
-      StatusCode:0,
-      StatusMsg:"register success",
-      UserId:users[0].Id,
-      Token:users[0].Token,
-    }
-  }else{
-    fmt.Println("wrong user")
-    return douyin_core.DouyinUserRegisterResponse{
-      StatusCode:1,
-      StatusMsg:"user name repeat",
-    }
-  }
-  
+	username := req.Username
+	password := req.Password
+	fmt.Println(username, password)
+	password = utils.AesEncrypt(username, password)
+	fmt.Println(password)
+	users := make([]*douyin_core.User, 0)
+	fmt.Println(db)
+	tx := db.Begin()
+
+	result := tx.Where("Name = ?", username).Find(&users)
+	token := utils.AesEncrypt(username, password)
+	if result.RowsAffected == 0 {
+		fmt.Println("new user")
+		tx.Create(&douyin_core.User{
+			Token: token,
+			Name:  username,
+		})
+		tx.Create(&douyin_core.DouyinUserLoginRequest{
+			Username: username,
+			Password: password,
+		})
+		result = tx.Where("Name = ?", username).Find(&users)
+		tx.Commit()
+		return douyin_core.DouyinUserRegisterResponse{
+			StatusCode: 0,
+			StatusMsg:  "register success",
+			UserId:     users[0].Id,
+			Token:      users[0].Token,
+		}
+	} else {
+		tx.Rollback()
+		fmt.Println("user exist")
+		return douyin_core.DouyinUserRegisterResponse{
+			StatusCode: 1,
+			StatusMsg:  "user name repeat",
+		}
+	}
+
 }

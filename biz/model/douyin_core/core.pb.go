@@ -7,8 +7,9 @@
 package douyin_core
 
 import (
-
+	"mime/multipart"
 	"time"
+
 	_ "github.com/cloudwego/biz/model/api"
 )
 
@@ -19,7 +20,7 @@ type Comment struct {
 	CreatedAt time.Time `json:"-"`
 	Id         int64  `protobuf:"varint,1,req,name=id" json:"id,required" form:"id,required" query:"id,required"`                                                    // 视频评论id
 	Content    string `protobuf:"bytes,3,req,name=content" json:"content,required" form:"content,required" query:"content,required"`                                 // 评论内容
-	CreateDate string `protobuf:"bytes,4,req,name=create_date,json=createDate" json:"create_date,required" form:"create_date,required" query:"create_date,required"` // 评论发布日期，格式 mm-dd
+	// CreateDate string `protobuf:"bytes,4,req,name=create_date,json=createDate" json:"create_date,required" form:"create_date,required" query:"create_date,required"` // 评论发布日期，格式 mm-dd
 	User       *User   `protobuf:"bytes,2,req,name=user" json:"user,required" form:"user,required" query:"user,required" gorm:"-"`                                             // 评论用户信息
 }
 
@@ -39,6 +40,21 @@ type DouyinUserResponse struct {
 }
 
 
+type UserFollowers struct{
+	UserId int64
+	FollowerId int64
+}
+
+type UserFavVideos struct{
+	UserId int64
+	VideoId int64 
+}
+
+type UserVideos struct{
+	UserId int64
+	VideoId int64 
+}
+
 
 type User struct {
   Token         string `json:"-"`
@@ -46,16 +62,19 @@ type User struct {
 	Name          string `protobuf:"bytes,2,req,name=name" json:"name,required" form:"name,required" query:"name,required" `                                            // 用户名称
 	FollowCount   int64  `protobuf:"varint,3,opt,name=follow_count,json=followCount" json:"follow_count,omitempty" form:"follow_count" query:"follow_count"`           // 关注总数
 	FollowerCount int64  `protobuf:"varint,4,opt,name=follower_count,json=followerCount" json:"follower_count,omitempty" form:"follower_count" query:"follower_count"` // 粉丝总数
-	IsFollow      bool   `protobuf:"varint,5,req,name=is_follow,json=isFollow" json:"is_follow,required" form:"is_follow,required" query:"is_follow,required"`         // true-已关注，false-未关注
-	UserLogin     *DouyinUserLoginRequest `json:"-" gorm:"foreignKey:UserId;references:Id"`//用户与自己的登录信息，一对一的关系
-	VideoList []*Video `json:"-" gorm:"foreignKey:UserId;references:Id"`               //一名用户，多个视频，一对多的关系
-	Follows []*User `json:"-" gorm:"many2many:user_followers"`                  //用户之间，多对多的关系
-	FavoriteVideos []*Video `json:"-" gorm:"many2many:user_fav_videos"`             //用户与喜欢的视频之间多对多的关系
-	Comments []*Comment `json:"-" gorm:"foreignKey:UserId;references:Id"`  //一名用户，多条评论
-
-
-
-
+	// IsFollow      bool   `protobuf:"varint,5,req,name=is_follow,json=isFollow" json:"is_follow,required" form:"is_follow,required" query:"is_follow,required"`         // true-已关注，false-未关注
+	UserLogin     *DouyinUserLoginRequest `json:"-" gorm:"-"`// gorm:"foreignKey:UserId;references:Id"`//用户与自己的登录信息，一对一的关系
+	VideoList []*Video `json:"-" gorm:"-"`//gorm:"foreignKey:UserId;references:Id"`               //一名用户，多个视频，一对多的关系
+	Follows []*User `json:"-" gorm:"-"`//gorm:"many2many:user_followers"`                  //用户之间，多对多的关系
+	FavoriteVideos []*Video `json:"-" gorm:"-"`//gorm:"many2many:user_fav_videos"`             //用户与喜欢的视频之间多对多的关系
+	Comments []*Comment `json:"-" gorm:"-"`// gorm:"foreignKey:UserId;references:Id"`  //一名用户，多条评论
+	Is_follow bool 
+	Avatar string 
+	Background_image string 
+	Signature string 
+	Total_favorited int64 
+	Work_count int64 
+	Favorite_count int64 
 }
 
 
@@ -123,11 +142,12 @@ type Video struct {
 	CommentCount  int64  `protobuf:"varint,6,req,name=comment_count,json=commentCount" json:"comment_count,required" form:"comment_count,required" query:"comment_count,required"`      // 视频的评论总数
 	IsFavorite    bool   `protobuf:"varint,7,req,name=is_favorite,json=isFavorite" json:"is_favorite,required" form:"is_favorite,required" query:"is_favorite,required"`                // true-已点赞，false-未点赞
 	Title         string `protobuf:"bytes,8,req,name=title" json:"title,required" form:"title,required" query:"title,required"`                                                         // 视频标题
-	Users         []*User `json:"-" gorm:"many2many:user_fav_videos;"`
-    Comments      []*Comment  `json:"-" gorm:"foreignKey:UserId;references:Id"`
+	Users         *User ` gorm:"-"`//gorm:"many2many:user_fav_videos;"`
+    Comments      []*Comment  `json:"-" gorm:"-"`//gorm:"foreignKey:UserId;references:Id"`
     CreatedAt     time.Time   `json:"-"`
     UpdatedAt     time.Time   `json:"-"`
 	UserId        int64 `json:"-"`
+	FileName string `json:"-"`
 }
 
 
@@ -152,7 +172,7 @@ type DouyinFeedResponse struct {
 type DouyinPublishActionRequest struct {
 
 	Token string `protobuf:"bytes,1,req,name=token" json:"token,required" form:"token,required" query:"token,required"` // 用户鉴权token
-	Data  []byte  `protobuf:"bytes,2,req,name=data" json:"data,required" form:"data,required" query:"data,required"`     // 视频数据
+	Data  *multipart.FileHeader  `protobuf:"bytes,2,req,name=data" json:"data,required" form:"data,required" query:"data,required"`     // 视频数据
 	Title string `protobuf:"bytes,3,req,name=title" json:"title,required" form:"title,required" query:"title,required"` // 视频标题
 }
 
