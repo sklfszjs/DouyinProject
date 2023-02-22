@@ -62,7 +62,7 @@ func PublishVideo(req douyin_core.DouyinPublishActionRequest) douyin_core.Douyin
 				StatusMsg:  "write video error",
 			}
 		}
-		playurl := fmt.Sprintf("%s:%d", utils.GetConfigs().IP, utils.GetConfigs().Port) + path_filename[1:]
+		playurl := fmt.Sprintf("http://%s:%d", utils.GetConfigs().IP, utils.GetConfigs().Port) + path_filename[1:]
 		tx.Create(&douyin_core.Video{
 			UserId:   users[0].Id,
 			Title:    req.Title,
@@ -70,7 +70,7 @@ func PublishVideo(req douyin_core.DouyinPublishActionRequest) douyin_core.Douyin
 			CoverUrl: "",
 			FileName: path_filename,
 		})
-		videos := make([]douyin_core.Video, 0)
+		videos := make([]*douyin_core.Video, 0)
 		result := tx.Where("play_url = ?", playurl).Find(&videos)
 		if result.RowsAffected != 1 {
 			fmt.Println(&result.Statement.SQL, result.RowsAffected)
@@ -107,7 +107,7 @@ func CreateDataDir(basePath string, folderName string) (string, error) {
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		// 必须分成两步
 		// 先创建文件夹
-		os.Mkdir(folderPath, 0777)
+		os.MkdirAll(folderPath, 0777)
 		// 再修改权限
 		os.Chmod(folderPath, 0777)
 	}
@@ -124,7 +124,7 @@ func WriteVideo(file *multipart.FileHeader, dirname string, filename string) (st
 	defer filepoint.Close()
 
 	//创建新文件进行存储
-	pathname, err := CreateDataDir("./", dirname)
+	pathname, err := CreateDataDir("./statistic/", dirname)
 	if err != nil {
 		fmt.Println("total create data dir err is", err)
 		return "", errors.New("createdatadir error")

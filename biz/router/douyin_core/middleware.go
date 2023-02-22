@@ -11,6 +11,11 @@ func rootMw() []app.HandlerFunc {
 	return nil
 }
 
+func _sendvideoMw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
 func _douyinMw() []app.HandlerFunc {
 	// your code...
 	return nil

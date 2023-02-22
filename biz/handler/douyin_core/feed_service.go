@@ -5,6 +5,7 @@ package douyin_core
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/cloudwego/biz/utils"
 
@@ -25,6 +26,17 @@ func CreateFeedResponse(ctx context.Context, c *app.RequestContext) {
 	}
 	resp := FeedService(req)
 	c.JSON(consts.StatusOK, resp)
+}
+
+func SendVideo(ctx context.Context, c *app.RequestContext) {
+	fileName := c.Param("path")
+	fmt.Println("file name is ", fileName)
+	content, err := os.ReadFile(fileName)
+	if err != nil {
+		fmt.Println("read file error")
+		return
+	}
+	c.Data(200, "video/mp4", content)
 }
 
 func FeedService(req douyin_core.DouyinFeedRequest) douyin_core.DouyinFeedResponse {
