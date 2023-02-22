@@ -3,12 +3,19 @@
 package DouyinCore
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/cloudwego/hertz/pkg/app"
 )
 
 func rootMw() []app.HandlerFunc {
 	// your code...
-	return nil
+	return []app.HandlerFunc{
+		func(c context.Context, ctx *app.RequestContext) {
+			fmt.Println(string(ctx.Request.Header.Host()), string(ctx.Request.Header.RequestURI()))
+		},
+	}
 }
 
 func _sendvideoMw() []app.HandlerFunc {

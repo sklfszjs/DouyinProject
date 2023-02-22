@@ -15,10 +15,10 @@ import (
 
 // Register register routes based on the IDL 'api.${HTTP Method}' annotation.
 func Register(r *server.Hertz) {
-
+	
 	root := r.Group("/", rootMw()...)
 	{
-		root.GET("/statistic/*path",append(_sendvideoMw(),douyin_core.SendVideo)...)
+		root.GET("/statistic/*path",append(_sendvideoMw())...)
 		_douyin := root.Group("/douyin", _douyinMw()...)
 		{
 			_feed := _douyin.Group("/feed", _feedMw()...)
