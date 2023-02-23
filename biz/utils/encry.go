@@ -6,6 +6,7 @@ import (
 	"crypto/cipher"
 	"encoding/base64"
 	"fmt"
+	"strconv"
 )
 
 func demo() {
@@ -47,7 +48,15 @@ func AesEncrypt(orig string, key string) string {
 	// 加密
 	blockMode.CryptBlocks(cryted, origData)
 
-	return base64.StdEncoding.EncodeToString(cryted)
+	str := base64.StdEncoding.EncodeToString(cryted)
+	res := ""
+	for _, char := range str {
+		res += strconv.Itoa(int(char))
+	}
+	if len(res) > 128 {
+		res = res[:128]
+	}
+	return res
 
 }
 
