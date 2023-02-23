@@ -68,37 +68,36 @@ func FeedService(req douyin_core.DouyinFeedRequest) douyin_core.DouyinFeedRespon
 	tx := db.Begin()
 
 	result := tx.Where("token = ? ", token).Find(&users)
-	if result.RowsAffected == 1 {
-		videos := make([]*douyin_core.Video, 0)
-		tx.Where("user_id = ?", users[0].Id).Where("UNIX_TIMESTAMP(created_at) < ?", req.LatestTime).Order("created_at").Find(&videos)
-		for i := 0; i < len(videos); i++ {
-			videos[i].Users = users[0]
-		}
-		tx.Commit()
-		var nexttime int64 = 1 << 62
-		for _, v := range videos {
-			if nexttime > v.CreatedAt.Unix() {
-				nexttime = v.CreatedAt.Unix()
-			}
-		}
-
-		nexttime = time.Now().Unix()
-		//TODO这里逻辑得重新理一下
-
-		return douyin_core.DouyinFeedResponse{
-			StatusCode: 0,
-			StatusMsg:  "operation success",
-			VideoList:  videos,
-			NextTime:   nexttime,
-		}
-
+	if result.RowsAffected == 0 {
+		fmt.Println("does not login in visit")
 	} else {
-		tx.Rollback()
-		fmt.Println("user not found")
-		return douyin_core.DouyinFeedResponse{
-			StatusCode: 1,
-			StatusMsg:  "user not found",
+		fmt.Println("user login visit")
+	}
+	videos := make([]*douyin_core.Video, 0)
+	tx.Where("UNIX_TIMESTAMP(created_at) < ?", req.LatestTime).Order("created_at").Limit(30).Find(&videos)
+	for i := 0; i < len(videos); i++ {
+		users := make([]*douyin_core.User, 0)
+		tx.Where("id = ?", videos[i].UserId).Find(&users)
+		videos[i].Users = users[0]
+	}
+	tx.Commit()
+	var nexttime int64 = 1 << 62
+	for _, v := range videos {
+		if nexttime > v.CreatedAt.Unix() {
+			nexttime = v.CreatedAt.Unix()
 		}
+	}
+
+	if nexttime > time.Now().Unix() {
+		nexttime = time.Now().Unix()
+	}
+	//TODO这里逻辑得重新理一下
+
+	return douyin_core.DouyinFeedResponse{
+		StatusCode: 0,
+		StatusMsg:  "operation success",
+		VideoList:  videos,
+		NextTime:   nexttime,
 	}
 
 }
