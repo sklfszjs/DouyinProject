@@ -78,7 +78,7 @@ func FeedService(req douyin_core.DouyinFeedRequest) douyin_core.DouyinFeedRespon
 	for i := 0; i < len(videos); i++ {
 		users := make([]*douyin_core.User, 0)
 		tx.Where("id = ?", videos[i].UserId).Find(&users)
-		videos[i].Users = users[0]
+		videos[i].Author = users[0]
 	}
 	tx.Commit()
 	var nexttime int64 = 1 << 62
