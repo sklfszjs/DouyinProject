@@ -88,7 +88,7 @@ func CommentAction(req douyin_extra_first.DouyinCommentActionRequest) douyin_ext
 	} else {
 		return douyin_extra_first.DouyinCommentActionResponse{
 			StatusCode: 1,
-			StatusMsg:  "token not found",
+			StatusMsg:  "please login first",
 		}
 	}
 

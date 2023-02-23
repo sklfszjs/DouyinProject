@@ -37,30 +37,22 @@ func CommentList(req douyin_extra_first.DouyinCommentListRequest) douyin_extra_f
 	users := make([]*douyin_core.User, 0)
 	tx := db.Begin()
 	result := tx.Where("token = ?", req.Token).Find(&users)
-	if result.RowsAffected > 0 {
-		if result.RowsAffected > 1 {
-			tx.Rollback()
-			panic("repeat token")
-		}
-		comments := make([]*douyin_core.Comment, 0)
-		tx.Where("user_id = ? and video_id = ?", users[0].Id, req.VideoId).Find(&comments)
-		for i := 0; i < len(comments); i++ {
-			users := make([]*douyin_core.User, 0)
-			tx.Where("id = ?", comments[i].UserId).Find(&users)
-			comments[i].User = users[0]
-		}
-		tx.Commit()
-		return douyin_extra_first.DouyinCommentListResponse{
-			StatusCode:  0,
-			StatusMsg:   "success",
-			CommentList: comments,
-		}
-	} else {
+	if result.RowsAffected > 1 {
 		tx.Rollback()
-		return douyin_extra_first.DouyinCommentListResponse{
-			StatusCode: 1,
-			StatusMsg:  "please login first!",
-		}
+		panic("repeat token")
+	}
+	comments := make([]*douyin_core.Comment, 0)
+	tx.Where("user_id = ? and video_id = ?", users[0].Id, req.VideoId).Find(&comments)
+	for i := 0; i < len(comments); i++ {
+		users := make([]*douyin_core.User, 0)
+		tx.Where("id = ?", comments[i].UserId).Find(&users)
+		comments[i].User = users[0]
+	}
+	tx.Commit()
+	return douyin_extra_first.DouyinCommentListResponse{
+		StatusCode:  0,
+		StatusMsg:   "success",
+		CommentList: comments,
 	}
 
 }
