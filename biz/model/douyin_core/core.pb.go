@@ -17,7 +17,7 @@ import (
 type Comment struct {
 	UserId int64 `json:"-"`
 	VideoId int64 `json:"-"`
-	CreatedDate string
+	CreatedDate string `protobuf:"bytes,3,req,name=created_date" json:"created_date,required" form:"created_date,required" query:"created_date,required"`   
 	Id         int64  `protobuf:"varint,1,req,name=id" json:"id,required" form:"id,required" query:"id,required"`                                                    // 视频评论id
 	Content    string `protobuf:"bytes,3,req,name=content" json:"content,required" form:"content,required" query:"content,required"`                                 // 评论内容
 	// CreateDate string `protobuf:"bytes,4,req,name=create_date,json=createDate" json:"create_date,required" form:"create_date,required" query:"create_date,required"` // 评论发布日期，格式 mm-dd
@@ -57,24 +57,24 @@ type UserVideos struct{
 
 
 type User struct {
-  Token         string `json:"-"`
-	Id            int64  `protobuf:"varint,1,req,name=id" json:"id,required" form:"id,required" query:"id,required"`                                                   // 用户id
-	Name          string `protobuf:"bytes,2,req,name=name" json:"name,required" form:"name,required" query:"name,required" `                                            // 用户名称
-	FollowCount   int64         // 关注总数
-	FollowerCount int64   // 粉丝总数
+  Token         string ` protobuf:"bytes,1,req,name=token" json:"token,required" form:"token,required" query:"token,required" json:"-"` 
+	Id            int64  `protobuf:"varint,2,req,name=id" json:"id,required" form:"id,required" query:"id,required"`                                                   // 用户id
+	Name          string `protobuf:"bytes,3,req,name=name" json:"name,required" form:"name,required" query:"name,required" `                                            // 用户名称
+	FollowCount   int64   `protobuf:"varint,4,req,name=follow_count" json:"follow_count,required" form:"follow_count,required" query:"follow_count,required"`                            // 关注总数
+	FollowerCount int64  `protobuf:"varint,5,req,name=follower_count" json:"follower_count,required" form:"follower_count,required" query:"follower_count,required"`                       // 粉丝总数
 	// IsFollow      bool   `protobuf:"varint,5,req,name=is_follow,json=isFollow" json:"is_follow,required" form:"is_follow,required" query:"is_follow,required"`         // true-已关注，false-未关注
 	UserLogin     *DouyinUserLoginRequest `json:"-" gorm:"-"`// gorm:"foreignKey:UserId;references:Id"`//用户与自己的登录信息，一对一的关系
 	VideoList []*Video `json:"-" gorm:"-"`//gorm:"foreignKey:UserId;references:Id"`               //一名用户，多个视频，一对多的关系
 	Follows []*User `json:"-" gorm:"-"`//gorm:"many2many:user_followers"`                  //用户之间，多对多的关系
 	FavoriteVideos []*Video `json:"-" gorm:"-"`//gorm:"many2many:user_fav_videos"`             //用户与喜欢的视频之间多对多的关系
 	Comments []*Comment `json:"-" gorm:"-"`// gorm:"foreignKey:UserId;references:Id"`  //一名用户，多条评论
-	IsFollow bool 
-	Avatar string 
-	BackgroundImage string 
-	Signature string 
-	TotalFavorited int64 
-	WorkCount int64 
-	FavoriteCount int64 
+	IsFollow bool  `protobuf:"varint,5,req,name=is_follow,json=isFollow" json:"is_follow,required" form:"is_follow,required" query:"is_follow,required"` 
+	Avatar string ` json:"avatar,required" form:"avatar,required" query:"avatar,required" `
+	BackgroundImage string ` json:"background_image,required" form:"background_image,required" query:"background_image,required" `
+	Signature string ` json:"signature,required" form:"signature,required" query:"signature,required" `
+	TotalFavorited int64  `protobuf:"varint,2,req,name=total_favorited" json:"total_favorited,required" form:"total_favorited,required" query:"total_favorited,required"`                                                  
+	WorkCount int64  ` json:"work_count,required" form:"work_count,required" query:"work_count,required"`                                                  
+	FavoriteCount int64  `json:"favorite_count,required" form:"favorite_count,required" query:"favorite_count,required"`                                                  
 }
 
 
