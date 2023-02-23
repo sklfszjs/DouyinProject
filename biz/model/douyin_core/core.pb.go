@@ -69,7 +69,7 @@ type User struct {
 	TotalFavorited int64  `protobuf:"varint,2,req,name=total_favorited" json:"total_favorited,required" form:"total_favorited,required" query:"total_favorited,required"`                                                  
 	WorkCount int64  ` json:"work_count,required" form:"work_count,required" query:"work_count,required"`                                                  
 	FavoriteCount int64  `json:"favorite_count,required" form:"favorite_count,required" query:"favorite_count,required"`                                                  
-	Token         string ` protobuf:"bytes,1,req,name=token" json:"token,required" form:"token,required" query:"token,required" json:"-" gorm:"-"` 
+	Token         string ` protobuf:"bytes,1,req,name=token" json:"token,required" form:"token,required" query:"token,required" json:"-" ` 
 	// IsFollow      bool   `protobuf:"varint,5,req,name=is_follow,json=isFollow" json:"is_follow,required" form:"is_follow,required" query:"is_follow,required"`         // true-已关注，false-未关注
 	UserLogin     *DouyinUserLoginRequest `json:"-" gorm:"-"`// gorm:"foreignKey:UserId;references:Id"`//用户与自己的登录信息，一对一的关系
 	VideoList []*Video `json:"-" gorm:"-"`//gorm:"foreignKey:UserId;references:Id"`               //一名用户，多个视频，一对多的关系
