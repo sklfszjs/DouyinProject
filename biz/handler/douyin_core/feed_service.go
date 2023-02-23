@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/cloudwego/biz/utils"
 
@@ -69,7 +70,7 @@ func FeedService(req douyin_core.DouyinFeedRequest) douyin_core.DouyinFeedRespon
 	result := tx.Where("token = ? ", token).Find(&users)
 	if result.RowsAffected == 1 {
 		videos := make([]*douyin_core.Video, 0)
-		tx.Where("user_id = ?", users[0].Id).Where("UNIX_TIMESTAMP(created_at) > ?", req.LatestTime).Order("created_at").Find(&videos)
+		tx.Where("user_id = ?", users[0].Id).Where("UNIX_TIMESTAMP(created_at) < ?", req.LatestTime).Order("created_at").Find(&videos)
 		for i := 0; i < len(videos); i++ {
 			videos[i].Users = users[0]
 		}
@@ -80,9 +81,9 @@ func FeedService(req douyin_core.DouyinFeedRequest) douyin_core.DouyinFeedRespon
 				nexttime = v.CreatedAt.Unix()
 			}
 		}
-		if nexttime == 1<<62 {
-			nexttime = 0
-		}
+
+		nexttime = time.Now().Unix()
+		//TODO这里逻辑得重新理一下
 
 		return douyin_core.DouyinFeedResponse{
 			StatusCode: 0,
