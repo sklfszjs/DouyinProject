@@ -46,7 +46,7 @@ func UserService(req douyin_core.DouyinUserRequest) douyin_core.DouyinUserRespon
 		fmt.Println("legal user")
 		tx.Commit()
 		// users[0].Is_follow = true
-
+		fmt.Printf("%#v", users[0])
 		return douyin_core.DouyinUserResponse{
 			StatusCode: 0,
 			StatusMsg:  "welcome, " + users[0].Name,

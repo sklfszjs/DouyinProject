@@ -60,8 +60,8 @@ type User struct {
   Token         string `json:"-"`
 	Id            int64  `protobuf:"varint,1,req,name=id" json:"id,required" form:"id,required" query:"id,required"`                                                   // 用户id
 	Name          string `protobuf:"bytes,2,req,name=name" json:"name,required" form:"name,required" query:"name,required" `                                            // 用户名称
-	FollowCount   int64  `protobuf:"varint,3,opt,name=follow_count,json=followCount" json:"follow_count,omitempty" form:"follow_count" query:"follow_count"`           // 关注总数
-	FollowerCount int64  `protobuf:"varint,4,opt,name=follower_count,json=followerCount" json:"follower_count,omitempty" form:"follower_count" query:"follower_count"` // 粉丝总数
+	FollowCount   int64         // 关注总数
+	FollowerCount int64   // 粉丝总数
 	// IsFollow      bool   `protobuf:"varint,5,req,name=is_follow,json=isFollow" json:"is_follow,required" form:"is_follow,required" query:"is_follow,required"`         // true-已关注，false-未关注
 	UserLogin     *DouyinUserLoginRequest `json:"-" gorm:"-"`// gorm:"foreignKey:UserId;references:Id"`//用户与自己的登录信息，一对一的关系
 	VideoList []*Video `json:"-" gorm:"-"`//gorm:"foreignKey:UserId;references:Id"`               //一名用户，多个视频，一对多的关系
