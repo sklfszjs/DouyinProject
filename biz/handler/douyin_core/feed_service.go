@@ -88,6 +88,15 @@ func FeedService(req douyin_core.DouyinFeedRequest) douyin_core.DouyinFeedRespon
 	}
 	tx.Commit()
 	var nexttime int64 = 1 << 62
+	if len(videos) == 0 {
+		return douyin_core.DouyinFeedResponse{
+			StatusCode: 0,
+			StatusMsg:  "no more new video",
+			VideoList:  videos,
+			NextTime:   time.Now().Unix(),
+		}
+
+	}
 	for _, v := range videos {
 		if nexttime > v.CreatedAt.Unix() {
 			nexttime = v.CreatedAt.Unix()
