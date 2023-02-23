@@ -65,14 +65,16 @@ func FeedService(req douyin_core.DouyinFeedRequest) douyin_core.DouyinFeedRespon
 
 	token := req.Token
 	users := make([]*douyin_core.User, 0)
-	visitor := users[0].Id
+	var visitor int64 = 0
 	tx := db.Begin()
 
 	result := tx.Where("token = ? ", token).Find(&users)
 	if result.RowsAffected == 0 {
 		fmt.Println("does not login in visit")
+
 	} else {
 		fmt.Println("user login visit")
+		visitor = users[0].Id
 	}
 	videos := make([]*douyin_core.Video, 0)
 	tx.Where("UNIX_TIMESTAMP(created_at) < ?", req.LatestTime).Order("created_at").Limit(30).Find(&videos)
@@ -87,11 +89,14 @@ func FeedService(req douyin_core.DouyinFeedRequest) douyin_core.DouyinFeedRespon
 	for i := 0; i < len(videos); i++ {
 		users := make([]*douyin_core.User, 0)
 		tx.Where("id = ?", videos[i].UserId).Find(&users)
-		userfavvideo := make([]*douyin_core.UserFavVideos, 0)
-		tx.Where("user_id = ? and video_id = ?", visitor, videos[i].Id).Find(&userfavvideo)
-		if len(userfavvideo) != 0 {
-			videos[i].IsFavorite = true
+		if visitor != 0 {
+			userfavvideo := make([]*douyin_core.UserFavVideos, 0)
+			tx.Where("user_id = ? and video_id = ?", visitor, videos[i].Id).Find(&userfavvideo)
+			if len(userfavvideo) != 0 {
+				videos[i].IsFavorite = true
+			}
 		}
+
 		videos[i].Author = users[0]
 	}
 	tx.Commit()
