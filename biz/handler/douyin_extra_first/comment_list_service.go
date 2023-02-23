@@ -47,8 +47,10 @@ func CommentList(req douyin_extra_first.DouyinCommentListRequest) douyin_extra_f
 		users := make([]*douyin_core.User, 0)
 		tx.Where("id = ?", comments[i].UserId).Find(&users)
 		comments[i].User = users[0]
+		fmt.Printf("\n%#v\n", comments[i])
 	}
 	tx.Commit()
+
 	return douyin_extra_first.DouyinCommentListResponse{
 		StatusCode:  0,
 		StatusMsg:   "success",
