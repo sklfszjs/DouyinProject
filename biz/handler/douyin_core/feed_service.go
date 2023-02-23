@@ -79,7 +79,7 @@ func FeedService(req douyin_core.DouyinFeedRequest) douyin_core.DouyinFeedRespon
 		users := make([]*douyin_core.User, 0)
 		tx.Where("id = ?", videos[i].UserId).Find(&users)
 		userfavvideo := make([]*douyin_core.UserFavVideos, 0)
-		tx.Where("userid = ? and videoid = ", videos[i].UserId, videos[i].Id).Find(&userfavvideo)
+		tx.Where("userid = ? and videoid = ?", videos[i].UserId, videos[i].Id).Find(&userfavvideo)
 		if len(userfavvideo) != 0 {
 			videos[i].IsFavorite = true
 		}
