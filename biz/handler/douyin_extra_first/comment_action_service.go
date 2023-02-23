@@ -4,8 +4,12 @@ package douyin_extra_first
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	douyin_core "github.com/cloudwego/biz/model/douyin_core"
 	douyin_extra_first "github.com/cloudwego/biz/model/douyin_extra_first"
+	"github.com/cloudwego/biz/utils"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
@@ -21,7 +25,71 @@ func CreateCommentActionResponse(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(douyin_extra_first.DouyinCommentActionResponse)
+	resp := CommentAction(req)
 
 	c.JSON(consts.StatusOK, resp)
+}
+
+func CommentAction(req douyin_extra_first.DouyinCommentActionRequest) douyin_extra_first.DouyinCommentActionResponse {
+	db := utils.GetDBConnPool().GetConn()
+	defer utils.GetDBConnPool().ReturnConn(db)
+
+	fmt.Printf("%#v", req)
+	users := make([]*douyin_core.User, 0)
+	tx := db.Begin()
+	fmt.Println(1)
+	result := tx.Where("token = ?", req.Token).Find(&users)
+	if result.RowsAffected > 0 {
+		if result.RowsAffected > 1 {
+			tx.Rollback()
+			panic("repeat token")
+		}
+		if req.ActionType == 1 {
+			fmt.Println(time.Now().Format("01-02"))
+			newcomment := &douyin_core.Comment{
+				Content:   req.CommentText,
+				CreatedAt: time.Now().Format("01-02"),
+				UserId:    users[0].Id,
+				VideoId:   req.VideoId,
+				User:      users[0],
+			}
+			tx.Create(newcomment)
+			videos := make([]*douyin_core.Video, 0)
+			tx.Where("id = ?", req.VideoId).Find(&videos)
+			tx.Model(&douyin_core.Video{Id: req.VideoId}).Updates(douyin_core.Video{CommentCount: videos[0].CommentCount + 1})
+			tx.Commit()
+			return douyin_extra_first.DouyinCommentActionResponse{
+				StatusCode: 0,
+				StatusMsg:  "comment success",
+				Comment:    newcomment,
+			}
+
+		} else {
+			comments := make([]douyin_core.Comment, 0)
+			if tx.Where("id = ?", req.CommentId).Find(&comments).RowsAffected == 0 {
+				return douyin_extra_first.DouyinCommentActionResponse{
+					StatusCode: 1,
+					StatusMsg:  "comment has been removed",
+				}
+
+			}
+			videos := make([]*douyin_core.Video, 0)
+			tx.Where("id = ?", req.VideoId).Find(&videos)
+			tx.Model(&douyin_core.Video{Id: req.VideoId}).Updates(douyin_core.Video{CommentCount: videos[0].CommentCount - 1})
+
+			tx.Delete(&douyin_core.Comment{}, "id = ?", req.CommentId)
+			tx.Commit()
+			return douyin_extra_first.DouyinCommentActionResponse{
+				StatusCode: 0,
+				StatusMsg:  "remove comment success",
+			}
+		}
+
+	} else {
+		return douyin_extra_first.DouyinCommentActionResponse{
+			StatusCode: 1,
+			StatusMsg:  "token not found",
+		}
+	}
+
 }

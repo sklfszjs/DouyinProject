@@ -58,6 +58,15 @@ func _listMw() []app.HandlerFunc {
 	return nil
 }
 
+func _list0Mw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+func _createcommentlistresponseMw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
 func _createfavoritelistresponseMw() []app.HandlerFunc {
 	// your code...
 	return nil

@@ -11,16 +11,6 @@ import (
 )
 
 
-type User struct {
-
-	Id            int64  `protobuf:"varint,1,req,name=id" json:"id,required" form:"id,required" query:"id,required"`                                                   // 用户id
-	Name          string `protobuf:"bytes,2,req,name=name" json:"name,required" form:"name,required" query:"name,required"`                                            // 用户名称
-	FollowCount   int64  `protobuf:"varint,3,opt,name=follow_count,json=followCount" json:"follow_count,omitempty" form:"follow_count" query:"follow_count"`           // 关注总数
-	FollowerCount int64  `protobuf:"varint,4,opt,name=follower_count,json=followerCount" json:"follower_count,omitempty" form:"follower_count" query:"follower_count"` // 粉丝总数
-	IsFollow      bool   `protobuf:"varint,5,req,name=is_follow,json=isFollow" json:"is_follow,required" form:"is_follow,required" query:"is_follow,required"`         // true-已关注，false-未关注
-}
-
-
 
 type DouyinCommentActionRequest struct {
 
@@ -74,4 +64,15 @@ type DouyinFavoriteListResponse struct {
 	VideoList  []*douyin_core.Video `protobuf:"bytes,3,rep,name=video_list,json=videoList" json:"video_list" form:"video_list" query:"video_list"`                                  // 用户点赞视频列表
 }
 
+type DouyinCommentListRequest struct{
+	Token       string `protobuf:"bytes,1,req,name=token" json:"token,required" form:"token,required" query:"token,required"`                                          // 用户鉴权token
+	VideoId     int64  `protobuf:"varint,2,req,name=video_id,json=videoId" json:"video_id,required" form:"video_id,required" query:"video_id,required"`                // 视频id
+
+}
+
+type DouyinCommentListResponse struct{
+	StatusCode int32
+	StatusMsg  string
+	CommentList []*douyin_core.Comment
+}
 

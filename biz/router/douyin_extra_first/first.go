@@ -3,6 +3,8 @@
 package DouyinExtraFirst
 
 import (
+	// "go/doc/comment"
+
 	douyin_extra_first "github.com/cloudwego/biz/handler/douyin_extra_first"
 	"github.com/cloudwego/hertz/pkg/app/server"
 )
@@ -25,6 +27,10 @@ func Register(r *server.Hertz) {
 				_action := _comment.Group("/action", _actionMw()...)
 				_action.POST("/", append(_createcomment_ctionresponseMw(), douyin_extra_first.CreateCommentActionResponse)...)
 			}
+			{
+				_list := _comment.Group("/list", _listMw()...)
+				_list.GET("/", append(_createcommentlistresponseMw(), douyin_extra_first.CreateCommentListResponse)...)
+			}
 		}
 		{
 			_favorite := _douyin.Group("/favorite", _favoriteMw()...)
@@ -33,8 +39,8 @@ func Register(r *server.Hertz) {
 				_action0.POST("/", append(_createfavorite_ctionresponseMw(), douyin_extra_first.CreateFavoriteActionResponse)...)
 			}
 			{
-				_list := _favorite.Group("/list", _listMw()...)
-				_list.GET("/", append(_createfavoritelistresponseMw(), douyin_extra_first.CreateFavoriteListResponse)...)
+				_list0 := _favorite.Group("/list", _list0Mw()...)
+				_list0.GET("/", append(_createfavoritelistresponseMw(), douyin_extra_first.CreateFavoriteListResponse)...)
 			}
 		}
 	}
