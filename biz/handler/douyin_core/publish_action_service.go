@@ -143,7 +143,7 @@ func WriteVideo(file *multipart.FileHeader, dirname string, filename string) (st
 		return "", errors.New("createdatadir error")
 	}
 	filename = pathname + "/" + filename
-	fmt.Println(filename)
+	fmt.Println("file name is ", filename)
 	newfile, err := os.Create(filename)
 	if err != nil {
 		return "", err
