@@ -53,7 +53,7 @@ func PublishVideo(req douyin_core.DouyinPublishActionRequest) douyin_core.Douyin
 		filename := strconv.Itoa(int(time.Now().Unix())) + strconv.Itoa(time.Now().Nanosecond()) + strconv.Itoa(int(users[0].Id))
 		picname := filename + ".jpg"
 		filename = filename + ".mp4"
-		fmt.Println(filename)
+		fmt.Println("加上后缀之后", filename)
 		path_filename, err := WriteVideo(req.Data, strconv.Itoa(int(users[0].Id)), filename)
 
 		if err != nil {
@@ -75,7 +75,7 @@ func PublishVideo(req douyin_core.DouyinPublishActionRequest) douyin_core.Douyin
 		}
 		playurl := fmt.Sprintf("http://%s:%d", utils.GetConfigs().IP, utils.GetConfigs().Port) + compressvideoname[1:]
 		coverurl := fmt.Sprintf("http://%s:%d", utils.GetConfigs().IP, utils.GetConfigs().Port) + path_picname[1:]
-		fmt.Println(playurl, coverurl)
+		fmt.Println("play url and cover url", playurl, coverurl)
 		tx.Create(&douyin_core.Video{
 			UserId:   users[0].Id,
 			Title:    req.Title,
@@ -173,7 +173,7 @@ func SetCover(videoName, picName string) (string, string, error) {
 		return "", "", errors.New("createdatadir error")
 	}
 	picName = picPath + "/" + picName
-	fmt.Println(picName)
+	fmt.Println("picname is", picName)
 	videoname := utils.GetCoverImgAndCompress(videoName, picName)
 	return picName, videoname, nil
 }
