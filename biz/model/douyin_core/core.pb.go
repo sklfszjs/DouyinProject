@@ -68,13 +68,13 @@ type User struct {
 	Follows []*User `json:"-" gorm:"-"`//gorm:"many2many:user_followers"`                  //用户之间，多对多的关系
 	FavoriteVideos []*Video `json:"-" gorm:"-"`//gorm:"many2many:user_fav_videos"`             //用户与喜欢的视频之间多对多的关系
 	Comments []*Comment `json:"-" gorm:"-"`// gorm:"foreignKey:UserId;references:Id"`  //一名用户，多条评论
-	Is_follow bool 
+	IsFollow bool 
 	Avatar string 
-	Background_image string 
+	BackgroundImage string 
 	Signature string 
-	Total_favorited int64 
-	Work_count int64 
-	Favorite_count int64 
+	TotalFavorited int64 
+	WorkCount int64 
+	FavoriteCount int64 
 }
 
 

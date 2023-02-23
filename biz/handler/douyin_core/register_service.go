@@ -50,8 +50,8 @@ func UserRegister(req douyin_core.DouyinUserRegisterRequest) douyin_core.DouyinU
 			Token: token,
 			Name:  username,
 
-			Avatar:           fmt.Sprintf("http://%s:%d/statistic/img/profile.jpg", utils.GetConfigs().IP, utils.GetConfigs().Port),
-			Background_image: fmt.Sprintf("http://%s:%d/statistic/img/profile.jpg", utils.GetConfigs().IP, utils.GetConfigs().Port),
+			Avatar:          fmt.Sprintf("http://%s:%d/statistic/img/profile.jpg", utils.GetConfigs().IP, utils.GetConfigs().Port),
+			BackgroundImage: fmt.Sprintf("http://%s:%d/statistic/img/profile.jpg", utils.GetConfigs().IP, utils.GetConfigs().Port),
 		})
 		tx.Create(&douyin_core.DouyinUserLoginRequest{
 			Username: username,

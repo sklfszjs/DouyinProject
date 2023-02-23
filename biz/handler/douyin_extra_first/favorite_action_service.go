@@ -80,8 +80,8 @@ func FavoriteAction(req douyin_extra_first.DouyinFavoriteActionRequest) douyin_e
 			panic("video publisher repeat")
 		}
 		tx.Model(&douyin_core.Video{Id: videos[0].Id}).Updates(douyin_core.Video{FavoriteCount: videos[0].FavoriteCount + int64(agreeChange)})
-		tx.Model(&douyin_core.User{Id: users[0].Id}).Updates(douyin_core.User{Favorite_count: users[0].Favorite_count + int64(agreeChange)})
-		tx.Model(&douyin_core.User{Id: videos[0].UserId}).Updates(douyin_core.User{Total_favorited: publisher[0].Total_favorited + int64(agreeChange)})
+		tx.Model(&douyin_core.User{Id: users[0].Id}).Updates(douyin_core.User{FavoriteCount: users[0].FavoriteCount + int64(agreeChange)})
+		tx.Model(&douyin_core.User{Id: videos[0].UserId}).Updates(douyin_core.User{TotalFavorited: publisher[0].TotalFavorited + int64(agreeChange)})
 		tx.Commit()
 		return douyin_extra_first.DouyinFavoriteActionResponse{
 			StatusCode: 0,
