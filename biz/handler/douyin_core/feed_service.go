@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/cloudwego/biz/utils"
 
@@ -28,10 +29,28 @@ func CreateFeedResponse(ctx context.Context, c *app.RequestContext) {
 	c.JSON(consts.StatusOK, resp)
 }
 
-func SendVideo(ctx context.Context, c *app.RequestContext) {
+func SendFile(ctx context.Context, c *app.RequestContext) {
 	fileName := c.Param("path")
 	fmt.Println("file name is ", fileName)
-	content, err := os.ReadFile(fileName)
+	content, err := os.ReadFile("./statistic/" + fileName)
+	if err != nil {
+		fmt.Println("read file error")
+		return
+	}
+	words := strings.Split(fileName, ".")
+	suffix := words[len(words)-1]
+	if suffix == "mp4" {
+		c.Data(200, "video/mp4", content)
+	}
+	if suffix == "jpg" {
+		c.Data(200, "image/jpeg", content)
+	}
+}
+
+func SendVideo(fileName string, c *app.RequestContext) {
+
+	fmt.Println("file name is ", fileName)
+	content, err := os.ReadFile("./statistic/" + fileName)
 	if err != nil {
 		fmt.Println("read file error")
 		return

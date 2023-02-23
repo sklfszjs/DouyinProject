@@ -14,7 +14,7 @@ func init() {
 }
 
 func main() {
-	go utils.RunFileServer()
+	// go utils.RunFileServer()
 	h := server.New(server.WithMaxRequestBodySize(400*1024*1024),
 		server.WithHostPorts(fmt.Sprintf("%s:%d", utils.GetConfigs().IP, utils.GetConfigs().Port)))
 	register(h)

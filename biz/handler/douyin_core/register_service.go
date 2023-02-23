@@ -47,8 +47,9 @@ func UserRegister(req douyin_core.DouyinUserRegisterRequest) douyin_core.DouyinU
 	if result.RowsAffected == 0 {
 		fmt.Println("new user")
 		tx.Create(&douyin_core.User{
-			Token: token,
-			Name:  username,
+			Token:  token,
+			Name:   username,
+			Avatar: fmt.Sprintf("http://%s:%d/statistic/img/profile.jpg", utils.GetConfigs().IP, utils.GetConfigs().Port),
 		})
 		tx.Create(&douyin_core.DouyinUserLoginRequest{
 			Username: username,

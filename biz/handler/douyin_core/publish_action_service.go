@@ -51,6 +51,7 @@ func PublishVideo(req douyin_core.DouyinPublishActionRequest) douyin_core.Douyin
 		fmt.Println("legal user")
 		fmt.Println(req.Title)
 		filename := strconv.Itoa(int(time.Now().Unix())) + strconv.Itoa(time.Now().Nanosecond()) + strconv.Itoa(int(users[0].Id))
+		picname := filename + ".jpg"
 		filename = filename + ".mp4"
 		fmt.Println(filename)
 		path_filename, err := WriteVideo(req.Data, strconv.Itoa(int(users[0].Id)), filename)
@@ -62,12 +63,23 @@ func PublishVideo(req douyin_core.DouyinPublishActionRequest) douyin_core.Douyin
 				StatusMsg:  "write video error",
 			}
 		}
+		path_picname, err := SetCover(path_filename, picname)
+		if err != nil {
+			fmt.Println(err)
+			tx.Rollback()
+			return douyin_core.DouyinPublishActionResponse{
+				StatusCode: 1,
+				StatusMsg:  "form cover error",
+			}
+		}
 		playurl := fmt.Sprintf("http://%s:%d", utils.GetConfigs().IP, utils.GetConfigs().Port) + path_filename[1:]
+		coverurl := fmt.Sprintf("http://%s:%d", utils.GetConfigs().IP, utils.GetConfigs().Port) + path_picname[1:]
+		fmt.Println(playurl, coverurl)
 		tx.Create(&douyin_core.Video{
 			UserId:   users[0].Id,
 			Title:    req.Title,
 			PlayUrl:  playurl,
-			CoverUrl: "",
+			CoverUrl: coverurl,
 			FileName: path_filename,
 		})
 		videos := make([]*douyin_core.Video, 0)
@@ -150,4 +162,17 @@ func WriteVideo(file *multipart.FileHeader, dirname string, filename string) (st
 			}
 		}
 	}
+
+}
+
+func SetCover(videoName, picName string) (string, error) {
+	picPath, err := CreateDataDir("./statistic/", "img/")
+	if err != nil {
+		fmt.Println("total create data dir err is", err)
+		return "", errors.New("createdatadir error")
+	}
+	picName = picPath + "/" + picName
+	fmt.Println(picName)
+	utils.GetCoverImg(videoName, picName)
+	return picName, nil
 }

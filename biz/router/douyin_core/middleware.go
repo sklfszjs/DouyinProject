@@ -13,7 +13,7 @@ func rootMw() []app.HandlerFunc {
 	// your code...
 	return []app.HandlerFunc{
 		func(c context.Context, ctx *app.RequestContext) {
-			fmt.Println(string(ctx.Request.Header.Host()), string(ctx.Request.Header.RequestURI()))
+			fmt.Println("host:", string(ctx.Request.Header.Host()), "uri:", string(ctx.Request.Header.RequestURI()))
 		},
 	}
 }

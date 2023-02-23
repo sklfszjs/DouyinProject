@@ -18,7 +18,7 @@ func Register(r *server.Hertz) {
 	
 	root := r.Group("/", rootMw()...)
 	{
-		root.GET("/statistic/*path",append(_sendvideoMw())...)
+		root.GET("/statistic/*path",append(_sendvideoMw(),douyin_core.SendFile)...)
 		_douyin := root.Group("/douyin", _douyinMw()...)
 		{
 			_feed := _douyin.Group("/feed", _feedMw()...)
