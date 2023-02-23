@@ -42,7 +42,7 @@ func CommentList(req douyin_extra_first.DouyinCommentListRequest) douyin_extra_f
 		panic("repeat token")
 	}
 	comments := make([]*douyin_core.Comment, 0)
-	tx.Where("user_id = ? and video_id = ?", users[0].Id, req.VideoId).Find(&comments)
+	tx.Where(" video_id = ?", req.VideoId).Find(&comments)
 	for i := 0; i < len(comments); i++ {
 		users := make([]*douyin_core.User, 0)
 		tx.Where("id = ?", comments[i].UserId).Find(&users)
