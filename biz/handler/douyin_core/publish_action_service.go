@@ -55,6 +55,7 @@ func PublishVideo(req douyin_core.DouyinPublishActionRequest) douyin_core.Douyin
 		filename = filename + ".mp4"
 		fmt.Println(filename)
 		path_filename, err := WriteVideo(req.Data, strconv.Itoa(int(users[0].Id)), filename)
+
 		if err != nil {
 			fmt.Println(err)
 			tx.Rollback()
@@ -63,7 +64,7 @@ func PublishVideo(req douyin_core.DouyinPublishActionRequest) douyin_core.Douyin
 				StatusMsg:  "write video error",
 			}
 		}
-		path_picname, err := SetCover(path_filename, picname)
+		path_picname, compressvideoname, err := SetCover(path_filename, picname)
 		if err != nil {
 			fmt.Println(err)
 			tx.Rollback()
@@ -72,7 +73,7 @@ func PublishVideo(req douyin_core.DouyinPublishActionRequest) douyin_core.Douyin
 				StatusMsg:  "form cover error",
 			}
 		}
-		playurl := fmt.Sprintf("http://%s:%d", utils.GetConfigs().IP, utils.GetConfigs().Port) + path_filename[1:]
+		playurl := fmt.Sprintf("http://%s:%d", utils.GetConfigs().IP, utils.GetConfigs().Port) + compressvideoname[1:]
 		coverurl := fmt.Sprintf("http://%s:%d", utils.GetConfigs().IP, utils.GetConfigs().Port) + path_picname[1:]
 		fmt.Println(playurl, coverurl)
 		tx.Create(&douyin_core.Video{
@@ -80,7 +81,7 @@ func PublishVideo(req douyin_core.DouyinPublishActionRequest) douyin_core.Douyin
 			Title:    req.Title,
 			PlayUrl:  playurl,
 			CoverUrl: coverurl,
-			FileName: path_filename,
+			FileName: compressvideoname,
 		})
 		videos := make([]*douyin_core.Video, 0)
 		result := tx.Where("play_url = ?", playurl).Find(&videos)
@@ -165,14 +166,14 @@ func WriteVideo(file *multipart.FileHeader, dirname string, filename string) (st
 
 }
 
-func SetCover(videoName, picName string) (string, error) {
+func SetCover(videoName, picName string) (string, string, error) {
 	picPath, err := CreateDataDir("./statistic/", "img/")
 	if err != nil {
 		fmt.Println("total create data dir err is", err)
-		return "", errors.New("createdatadir error")
+		return "", "", errors.New("createdatadir error")
 	}
 	picName = picPath + "/" + picName
 	fmt.Println(picName)
-	utils.GetCoverImg(videoName, picName)
-	return picName, nil
+	videoname := utils.GetCoverImgAndCompress(videoName, picName)
+	return picName, videoname, nil
 }
