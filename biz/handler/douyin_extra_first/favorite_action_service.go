@@ -54,6 +54,12 @@ func FavoriteAction(req douyin_extra_first.DouyinFavoriteActionRequest) douyin_e
 		result = tx.Where(&douyin_core.UserFavVideos{UserId: users[0].Id,
 			VideoId: req.VideoId}).Find(&userFavVideos)
 		if result.RowsAffected == 0 {
+			if agreeChange == -1 {
+				return douyin_extra_first.DouyinFavoriteActionResponse{
+					StatusCode: 1,
+					StatusMsg:  "已经取消赞了",
+				}
+			}
 			fmt.Println("dianzan")
 
 			tx.Create(douyin_core.UserFavVideos{
@@ -61,6 +67,12 @@ func FavoriteAction(req douyin_extra_first.DouyinFavoriteActionRequest) douyin_e
 				VideoId: req.VideoId,
 			})
 		} else {
+			if agreeChange == 1 {
+				return douyin_extra_first.DouyinFavoriteActionResponse{
+					StatusCode: 1,
+					StatusMsg:  "已经点赞了",
+				}
+			}
 			fmt.Println("quxiaodianzan")
 
 			tx.Delete(&douyin_core.UserFavVideos{},

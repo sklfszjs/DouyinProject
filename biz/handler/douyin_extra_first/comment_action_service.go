@@ -47,11 +47,11 @@ func CommentAction(req douyin_extra_first.DouyinCommentActionRequest) douyin_ext
 		if req.ActionType == 1 {
 			fmt.Println(time.Now().Format("01-02"))
 			newcomment := &douyin_core.Comment{
-				Content:   req.CommentText,
-				CreatedAt: time.Now().Format("01-02"),
-				UserId:    users[0].Id,
-				VideoId:   req.VideoId,
-				User:      users[0],
+				Content:     req.CommentText,
+				CreatedDate: time.Now().Format("01-02"),
+				UserId:      users[0].Id,
+				VideoId:     req.VideoId,
+				User:        users[0],
 			}
 			tx.Create(newcomment)
 			videos := make([]*douyin_core.Video, 0)
