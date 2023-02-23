@@ -4,8 +4,11 @@ package douyin_extra_first
 
 import (
 	"context"
+	"fmt"
 
+	douyin_core "github.com/cloudwego/biz/model/douyin_core"
 	douyin_extra_first "github.com/cloudwego/biz/model/douyin_extra_first"
+	"github.com/cloudwego/biz/utils"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
@@ -21,7 +24,59 @@ func CreateFavoriteListResponse(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(douyin_extra_first.DouyinFavoriteListResponse)
+	resp := FavoriteList(req)
 
 	c.JSON(consts.StatusOK, resp)
+}
+
+func FavoriteList(req douyin_extra_first.DouyinFavoriteListRequest) douyin_extra_first.DouyinFavoriteListResponse {
+	db := utils.GetDBConnPool().GetConn()
+	defer utils.GetDBConnPool().ReturnConn(db)
+
+	fmt.Printf("%#v", req)
+	users := make([]*douyin_core.User, 0)
+	tx := db.Begin()
+	fmt.Println(1)
+	result := tx.Where("token = ?", req.Token).Find(&users)
+	if result.RowsAffected > 0 {
+		if result.RowsAffected > 1 {
+			tx.Rollback()
+			panic("repeat token")
+		}
+		userFavVideos := make([]douyin_core.UserFavVideos, 0)
+		result = tx.Where(&douyin_core.UserFavVideos{UserId: users[0].Id}).Find(&userFavVideos)
+		if result.RowsAffected == 0 {
+			fmt.Println("favorite list is empty")
+			tx.Commit()
+			return douyin_extra_first.DouyinFavoriteListResponse{
+				StatusCode: 0,
+				StatusMsg:  "favorite list is empty",
+			}
+
+		}
+		videoList := make([]*douyin_core.Video, 0)
+		for _, userVideo := range userFavVideos {
+			videos := make([]*douyin_core.Video, 0)
+			result = tx.Where(&douyin_core.Video{Id: userVideo.VideoId}).Find(&videos)
+			if result.RowsAffected != 1 {
+				tx.Rollback()
+				panic("video query error")
+			}
+			videos[0].IsFavorite = true
+			videos[0].Author = users[0]
+			videoList = append(videoList, videos[0])
+		}
+		tx.Commit()
+		return douyin_extra_first.DouyinFavoriteListResponse{
+			StatusCode: 0,
+			StatusMsg:  "query success",
+			VideoList:  videoList,
+		}
+	} else {
+		tx.Rollback()
+		return douyin_extra_first.DouyinFavoriteListResponse{
+			StatusCode: 1,
+			StatusMsg:  "dianzan false",
+		}
+	}
 }

@@ -43,7 +43,7 @@ func PublishList(req douyin_core.DouyinPublishListRequest) douyin_core.DouyinPub
 		videos := make([]*douyin_core.Video, 0)
 		tx.Where("user_id = ?", users[0].Id).Find(&videos)
 		for i := 0; i < len(videos); i++ {
-			videos[i].Users = users[0]
+			videos[i].Author = users[0]
 		}
 		tx.Commit()
 		return douyin_core.DouyinPublishListResponse{
