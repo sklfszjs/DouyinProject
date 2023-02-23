@@ -3,12 +3,19 @@
 package DouyinExtraFirst
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/cloudwego/hertz/pkg/app"
 )
 
 func rootMw() []app.HandlerFunc {
 	// your code...
-	return nil
+	return []app.HandlerFunc{
+		func(c context.Context, ctx *app.RequestContext) {
+			fmt.Println("host:", string(ctx.Request.Header.Host()), "uri:", string(ctx.Request.Header.RequestURI()))
+		},
+	}
 }
 
 func _douyinMw() []app.HandlerFunc {

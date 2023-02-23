@@ -41,6 +41,7 @@ func UserService(req douyin_core.DouyinUserRequest) douyin_core.DouyinUserRespon
 	tx := db.Begin()
 
 	result := tx.Where("id = ? and token = ?", userID, token).Find(&users)
+	fmt.Println("user num", result.RowsAffected)
 	if result.RowsAffected == 1 {
 		fmt.Println("legal user")
 		tx.Commit()

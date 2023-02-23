@@ -4,8 +4,11 @@ package douyin_extra_first
 
 import (
 	"context"
+	"fmt"
 
+	douyin_core "github.com/cloudwego/biz/model/douyin_core"
 	douyin_extra_first "github.com/cloudwego/biz/model/douyin_extra_first"
+	"github.com/cloudwego/biz/utils"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
@@ -21,7 +24,75 @@ func CreateFavoriteActionResponse(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(douyin_extra_first.DouyinFavoriteActionResponse)
+	resp := FavoriteAction(req)
 
 	c.JSON(consts.StatusOK, resp)
+}
+
+func FavoriteAction(req douyin_extra_first.DouyinFavoriteActionRequest) douyin_extra_first.DouyinFavoriteActionResponse {
+	db := utils.GetDBConnPool().GetConn()
+	defer utils.GetDBConnPool().ReturnConn(db)
+
+	fmt.Printf("%#v", req)
+	users := make([]*douyin_core.User, 0)
+	tx := db.Begin()
+	fmt.Println(1)
+	result := tx.Where("token = ?", req.Token).Find(&users)
+	if result.RowsAffected > 0 {
+		if result.RowsAffected > 1 {
+			tx.Rollback()
+			panic("repeat token")
+		}
+		agreeChange := 1
+		if req.ActionType == 2 {
+			agreeChange = -1
+		}
+
+		userFavVideos := make([]douyin_core.UserFavVideos, 0)
+		fmt.Println(2)
+
+		result = tx.Where(&douyin_core.UserFavVideos{UserId: users[0].Id,
+			VideoId: req.VideoId}).Find(&userFavVideos)
+		if result.RowsAffected == 0 {
+			fmt.Println("dianzan")
+
+			tx.Create(douyin_core.UserFavVideos{
+				UserId:  users[0].Id,
+				VideoId: req.VideoId,
+			})
+		} else {
+			fmt.Println("quxiaodianzan")
+
+			tx.Delete(&douyin_core.UserFavVideos{},
+				"user_id = ? and video_id = ?", users[0].Id, req.VideoId)
+		}
+
+		videos := make([]douyin_core.Video, 0)
+		result = tx.Where(&douyin_core.Video{Id: req.VideoId}).Find(&videos)
+		if result.RowsAffected != 1 {
+			tx.Rollback()
+			panic("video query error")
+		}
+		publisher := make([]douyin_core.User, 0)
+		result = tx.Where(&douyin_core.User{Id: videos[0].UserId}).Find(&publisher)
+		if result.RowsAffected != 1 {
+			tx.Rollback()
+			panic("video publisher repeat")
+		}
+		tx.Model(&douyin_core.Video{Id: videos[0].Id}).Updates(douyin_core.Video{FavoriteCount: videos[0].FavoriteCount + int64(agreeChange)})
+		tx.Model(&douyin_core.User{Id: users[0].Id}).Updates(douyin_core.User{Favorite_count: users[0].Favorite_count + int64(agreeChange)})
+		tx.Model(&douyin_core.User{Id: videos[0].UserId}).Updates(douyin_core.User{Total_favorited: publisher[0].Total_favorited + int64(agreeChange)})
+		tx.Commit()
+		return douyin_extra_first.DouyinFavoriteActionResponse{
+			StatusCode: 0,
+			StatusMsg:  "dianzan/quxiaozan success",
+		}
+	} else {
+		tx.Rollback()
+		return douyin_extra_first.DouyinFavoriteActionResponse{
+			StatusCode: 1,
+			StatusMsg:  "dianzan false",
+		}
+	}
+
 }
