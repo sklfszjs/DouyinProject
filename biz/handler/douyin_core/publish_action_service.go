@@ -89,7 +89,7 @@ func PublishVideo(req douyin_core.DouyinPublishActionRequest) douyin_core.Douyin
 			fmt.Println(&result.Statement.SQL, result.RowsAffected)
 			panic("where is the new data?")
 		}
-		tx.Model(&users[0]).Updates(douyin_core.User{WorkCount: users[0].WorkCount + 1})
+		tx.Model(&douyin_core.User{Id: users[0].Id}).Updates(douyin_core.User{WorkCount: users[0].WorkCount + 1})
 		tx.Create(&douyin_core.UserVideos{UserId: users[0].Id, VideoId: videos[0].Id})
 		tx.Commit()
 		return douyin_core.DouyinPublishActionResponse{
