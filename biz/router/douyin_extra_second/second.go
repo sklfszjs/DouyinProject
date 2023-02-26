@@ -31,7 +31,7 @@ func Register(r *server.Hertz) {
 			}
 		}
 		{
-			_relatioin := _douyin.Group("/relatioin", _relatioinMw()...)
+			_relatioin := _douyin.Group("/relation", _relatioinMw()...)
 			{
 				_follow := _relatioin.Group("/follow", _followMw()...)
 				{

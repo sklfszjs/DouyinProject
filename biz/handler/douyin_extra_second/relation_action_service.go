@@ -4,8 +4,11 @@ package douyin_extra_second
 
 import (
 	"context"
+	"fmt"
 
+	douyin_core "github.com/cloudwego/biz/model/douyin_core"
 	douyin_extra_second "github.com/cloudwego/biz/model/douyin_extra_second"
+	"github.com/cloudwego/biz/utils"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
@@ -21,7 +24,82 @@ func CreateRelationActionResponse(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(douyin_extra_second.DouyinRelationActionResponse)
+	resp := RelationAction(req)
 
 	c.JSON(consts.StatusOK, resp)
+}
+
+func RelationAction(req douyin_extra_second.DouyinRelationActionRequest) douyin_extra_second.DouyinRelationActionResponse {
+	db := utils.GetDBConnPool().GetConn()
+	defer utils.GetDBConnPool().ReturnConn(db)
+	users := make([]*douyin_core.User, 0)
+	tx := db.Begin()
+	result := tx.Where("token = ?", req.Token).Find(&users)
+	if result.RowsAffected > 0 {
+		if result.RowsAffected > 1 {
+			tx.Rollback()
+			panic("repeat token")
+		}
+		fmt.Println("关注方：", users[0].Id, "被关注：", req.ToUserId)
+		if users[0].Id == req.ToUserId {
+			tx.Rollback()
+			return douyin_extra_second.DouyinRelationActionResponse{
+				StatusCode: 1,
+				StatusMsg:  "you should not follow yourself",
+			}
+		}
+		fmt.Println(1)
+		followers := make([]*douyin_core.User, 0)
+		tx.Where("id = ?", req.ToUserId).Find(&followers)
+		userFollowers := make([]douyin_core.UserFollowers, 0)
+		result = tx.Where(&douyin_core.UserFollowers{FollowerId: users[0].Id,
+			UserId: req.ToUserId}).Find(&userFollowers)
+		if result.RowsAffected == 0 {
+			fmt.Println("尚未关注")
+			if req.ActionType == 2 {
+				tx.Rollback()
+				return douyin_extra_second.DouyinRelationActionResponse{
+					StatusCode: 1,
+					StatusMsg:  "已经取关注了",
+				}
+			}
+			tx.Create(douyin_core.UserFollowers{
+				UserId:     req.ToUserId,
+				FollowerId: users[0].Id,
+			})
+			fmt.Println("创建完成")
+			tx.Model(&douyin_core.User{Id: users[0].Id}).Updates(douyin_core.User{FollowCount: users[0].FollowCount + 1})
+			fmt.Println("追随者改好了")
+
+			tx.Model(&douyin_core.User{Id: followers[0].Id}).Updates(douyin_core.User{FollowerCount: followers[0].FollowerCount + 1})
+			fmt.Println("被追随者改好了")
+		} else {
+			fmt.Println("已经关注")
+
+			if req.ActionType == 1 {
+				tx.Rollback()
+				return douyin_extra_second.DouyinRelationActionResponse{
+					StatusCode: 1,
+					StatusMsg:  "已经关注了",
+				}
+			}
+			tx.Delete(&douyin_core.UserFollowers{},
+				"user_id = ? and follower_id = ?", req.ToUserId, users[0].Id)
+			tx.Model(&douyin_core.User{Id: users[0].Id}).Updates(douyin_core.User{FollowCount: users[0].FollowCount - 1})
+			tx.Model(&douyin_core.User{Id: followers[0].Id}).Updates(douyin_core.User{FollowerCount: followers[0].FollowerCount - 1})
+
+		}
+		tx.Commit()
+		return douyin_extra_second.DouyinRelationActionResponse{
+			StatusCode: 0,
+			StatusMsg:  "operate success",
+		}
+	} else {
+		tx.Rollback()
+		return douyin_extra_second.DouyinRelationActionResponse{
+			StatusCode: 1,
+			StatusMsg:  "token error",
+		}
+	}
+
 }

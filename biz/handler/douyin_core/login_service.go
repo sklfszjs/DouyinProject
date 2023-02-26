@@ -50,6 +50,7 @@ func UserLogin(req douyin_core.DouyinUserLoginRequest) douyin_core.DouyinUserLog
 		}
 		fmt.Println("login success")
 		fmt.Printf("%#v", users[0])
+		fmt.Println("token", users[0].Token)
 		tx.Commit()
 		return douyin_core.DouyinUserLoginResponse{
 			StatusCode: 0,

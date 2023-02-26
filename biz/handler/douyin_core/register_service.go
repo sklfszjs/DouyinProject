@@ -63,7 +63,7 @@ func UserRegister(req douyin_core.DouyinUserRegisterRequest) douyin_core.DouyinU
 			StatusCode: 0,
 			StatusMsg:  "register success",
 			UserId:     users[0].Id,
-			Token:      users[0].Token,
+			Token:      token,
 		}
 	} else {
 		tx.Rollback()

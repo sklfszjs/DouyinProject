@@ -55,6 +55,7 @@ func FavoriteAction(req douyin_extra_first.DouyinFavoriteActionRequest) douyin_e
 			VideoId: req.VideoId}).Find(&userFavVideos)
 		if result.RowsAffected == 0 {
 			if agreeChange == -1 {
+				tx.Rollback()
 				return douyin_extra_first.DouyinFavoriteActionResponse{
 					StatusCode: 1,
 					StatusMsg:  "已经取消赞了",
@@ -68,6 +69,7 @@ func FavoriteAction(req douyin_extra_first.DouyinFavoriteActionRequest) douyin_e
 			})
 		} else {
 			if agreeChange == 1 {
+				tx.Rollback()
 				return douyin_extra_first.DouyinFavoriteActionResponse{
 					StatusCode: 1,
 					StatusMsg:  "已经点赞了",

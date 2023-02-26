@@ -5,7 +5,9 @@ package douyin_extra_second
 import (
 	"context"
 
+	douyin_core "github.com/cloudwego/biz/model/douyin_core"
 	douyin_extra_second "github.com/cloudwego/biz/model/douyin_extra_second"
+	"github.com/cloudwego/biz/utils"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
@@ -21,7 +23,52 @@ func CreateRelationFriendListResponse(ctx context.Context, c *app.RequestContext
 		return
 	}
 
-	resp := new(douyin_extra_second.DouyinRelationFriendListResponse)
+	resp := FriendList(req)
 
 	c.JSON(consts.StatusOK, resp)
+}
+
+func FriendList(req douyin_extra_second.DouyinRelationFriendListRequest) douyin_extra_second.DouyinRelationFriendListResponse {
+	db := utils.GetDBConnPool().GetConn()
+	defer utils.GetDBConnPool().ReturnConn(db)
+	users := make([]*douyin_core.User, 0)
+	tx := db.Begin()
+
+	result := tx.Where("token = ? and id = ?", req.Token, req.UserId).Find(&users)
+	if result.RowsAffected > 0 {
+		friends := make([]*douyin_core.UserFollowers, 0)
+		result = tx.Table("user_followers a").
+			Joins("join user_followers b on a.user_id=b.follower_id").
+			Where("b.user_id = a.follower_id and a.user_id = ?", req.UserId).
+			Select("a.user_id", "a.follower_id").Find(&friends)
+
+		friendlist := make([]*douyin_extra_second.FriendUser, len(friends))
+		for i := 0; i < len(friends); i++ {
+			tx.Where(douyin_core.User{Id: friends[i].FollowerId}).Find(&users)
+			friendlist[i] = &douyin_extra_second.FriendUser{}
+			friendlist[i].User = *users[0]
+
+		}
+		// result = tx.Where(&douyin_core.UserFollowers{UserId: req.UserId}).Find(&userfollowers)
+		// for i := 0; i < len(userfollowers); i++ {
+		// 	userId := userfollowers[i].FollowerId
+		// 	fmt.Println("userid", req.UserId, "followerid", userId)
+		// 	tmpuserfollowers:=make([]*douyin_core.UserFollowers,0)
+		// 	result=tx.Where()
+		// 	tx.Where(&douyin_core.User{Id: userId}).Find(&users)
+		// 	userlist = append(userlist, users[0])
+
+		// }
+		return douyin_extra_second.DouyinRelationFriendListResponse{
+			StatusCode: 0,
+			StatusMsg:  "operate success",
+			UserList:   friendlist,
+		}
+
+	} else {
+		return douyin_extra_second.DouyinRelationFriendListResponse{
+			StatusCode: 1,
+			StatusMsg:  "user not found",
+		}
+	}
 }

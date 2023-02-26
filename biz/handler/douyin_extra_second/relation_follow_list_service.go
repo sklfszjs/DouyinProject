@@ -5,7 +5,9 @@ package douyin_extra_second
 import (
 	"context"
 
+	douyin_core "github.com/cloudwego/biz/model/douyin_core"
 	douyin_extra_second "github.com/cloudwego/biz/model/douyin_extra_second"
+	"github.com/cloudwego/biz/utils"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
@@ -21,7 +23,37 @@ func CreateRelationFollowListResponse(ctx context.Context, c *app.RequestContext
 		return
 	}
 
-	resp := new(douyin_extra_second.DouyinRelationFollowListResponse)
+	resp := FollowList(req)
 
 	c.JSON(consts.StatusOK, resp)
+}
+
+func FollowList(req douyin_extra_second.DouyinRelationFollowListRequest) douyin_extra_second.DouyinRelationFollowListResponse {
+	db := utils.GetDBConnPool().GetConn()
+	defer utils.GetDBConnPool().ReturnConn(db)
+	users := make([]*douyin_core.User, 0)
+	tx := db.Begin()
+	result := tx.Where("token = ? and id = ?", req.Token, req.UserId).Find(&users)
+	if result.RowsAffected > 0 {
+		userfollowers := make([]*douyin_core.UserFollowers, 0)
+		userlist := make([]*douyin_core.User, 0)
+		result = tx.Where(&douyin_core.UserFollowers{FollowerId: req.UserId}).Find(&userfollowers)
+		for i := 0; i < len(userfollowers); i++ {
+			userId := userfollowers[i].UserId
+			tx.Where(&douyin_core.User{Id: userId}).Find(&users)
+			userlist = append(userlist, users[0])
+
+		}
+		return douyin_extra_second.DouyinRelationFollowListResponse{
+			StatusCode: 0,
+			StatusMsg:  "operate success",
+			UserList:   userlist,
+		}
+
+	} else {
+		return douyin_extra_second.DouyinRelationFollowListResponse{
+			StatusCode: 1,
+			StatusMsg:  "user not found",
+		}
+	}
 }
